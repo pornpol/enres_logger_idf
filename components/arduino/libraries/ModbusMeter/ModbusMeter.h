@@ -93,8 +93,8 @@ class ModbusMeter
     static const uint8_t dts353                 = 0x01;
 
     //Power Meter DTS-353 Protocol Parameter
-    static const uint16_t dts353DataLength      = 0x0006; //Data Length = 38
-    static const uint16_t dts353StartAddress    = 0x000E; //Start Address = 22
+    //static const uint16_t dts353DataLength      = 0x0006; //Data Length = 38
+    //static const uint16_t dts353StartAddress    = 0x000E; //Start Address = 22
     //static const uint8_t dts353ADUSize          = 0x08;   //Application Data Unit Size
 
     // Modbus timeout [milliseconds]

@@ -499,21 +499,22 @@ void setup()
   meter.preTransmission(preTransmission);
   meter.postTransmission(postTransmission);
 
-  // Init SD Configuration
   sd.begin(SD_CS, Serial);
-  if(!sd.readConfig("/config"))
+
+ // Init Flash
+  if(!flash.begin(RECSIZE, Serial)) 
   {
     delay(1000);
     ESP.restart();
   }
   UNDERLINE;
 
-  // Init Flash
-  if(!flash.begin(RECSIZE, Serial)) 
-  {
-    delay(1000);
-    ESP.restart();
-  }
+  // Init SD Configuration
+  if(sd.isConfigFileValid("/config")) // SD Mount
+    flash.writeConfigFlash(sd.readConfig("/config"));
+  else // SD Unmount
+    sd.readConfig(flash.readConfigFlash());
+
   UNDERLINE;
 
   // Init Rtc

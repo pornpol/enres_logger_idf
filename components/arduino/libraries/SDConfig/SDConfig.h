@@ -16,7 +16,10 @@ class SDConfig
   public:
     SDConfig();
     bool begin(uint8_t cs, Stream& debug);
-    bool readConfig(const char * path);
+    bool isConfigFileValid(const char * path);
+    String readConfig(const char * path);
+    bool readConfig(String config);
+    //String readConfigString(const char * path);
 
     typedef struct __configGlobal
     {
