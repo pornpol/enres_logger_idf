@@ -17,7 +17,8 @@ bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MA
 
 float AnalogSensor::getSensor(uint8_t ch)
 {
-  return calSensor(_sensorType[ch], analogRead(_sensorPin[ch]));
+  //return calSensor(_sensorType[ch], analogRead(_sensorPin[ch])); // Get only 1 value
+  return calSensor(_sensorType[ch], getAvgAdc(10, ch)); // Get avg 10-2 Value
 }
 
 float AnalogSensor::calSensor(uint8_t type, uint16_t value)
@@ -26,33 +27,75 @@ float AnalogSensor::calSensor(uint8_t type, uint16_t value)
   float calVolt;
   float calRes;
 
+  //Serial.printf("Value : %d\r\n", value);
 
   switch(type)
   {
-    case sensorNone : // Not Connected
-      calValue = value; 
+    case sensorNone : // 0: Not Use
+      calValue = getAdcVoltage(value); 
       break;
 
-    case sensorTemp : // Temp
-      //Voltage = analogread*(3.3/1023)
-      //resistor = ((20*1000*3.3)/Voltage0)-(20*1000)
-      //temperature = ((-24.23)*log(resistor))+248.33
-      calVolt = value*(5/4095);
+    case sensorColdTempT2 : // 1: Cold Water Temp Type2
+      calVolt = getAdcVoltage(value);
       calRes = ((20*1000*5)/calVolt)-(20*1000);
-      calValue = ((-24.23)*log(calRes))+248.33; // Update to type 3
+      calValue = valueRange(((-20.73)*log(calRes))+215.43, -5, 24);
       break;
 
-    case sensorPress : // Press
-      //Voltage = analogread*(3.3/1023)
-      //pressure = (Voltage/0.165)-4
-      calVolt = value*(5/4095);
+    case sensorHotTempT3 : // 4: Hot Water Temp Type3
+      calVolt = getAdcVoltage(value);
+      calRes = ((5.6*1000*5)/calVolt)-(5.6*1000);
+      calValue = valueRange(((-25.45)*log(calRes))+259.54, 15, 45);
+      break;
+
+    case sensorPress : // 5: Pressure
+      calVolt = getAdcVoltage(value);
       calValue = (calVolt/0.165)-4; 
       break;
 
     default : 
-      calValue = value; 
+      calValue = getAdcVoltage(value); 
       break;
   }
 
   return calValue;
+}
+
+float AnalogSensor::getAdcVoltage(uint16_t value)
+{
+  for(uint8_t i=0; i<NUM_ADC_TABLE; i++)
+  {
+    if(value == 0) return 0;
+
+    if(_adcVoltage[i] >= value)
+    {
+      return ((0.05*(i-1)) + (((float)(value-_adcVoltage[i-1])/(float)(_adcVoltage[i]-_adcVoltage[i-1]))*0.05));
+    }
+  }
+  return 3.3;
+}
+
+uint16_t AnalogSensor::getAvgAdc(uint8_t num, uint8_t ch)
+{
+  uint16_t val;
+  uint16_t sumVal = 0;
+  uint16_t minVal = 4095;
+  uint16_t maxVal = 0;
+
+  for(uint8_t i=0; i<num; i++)
+  {
+    val = analogRead(_sensorPin[ch]);
+    if(val < minVal) minVal = val;
+    if(val > maxVal) maxVal = val;
+    sumVal += val;
+  }
+
+  return (sumVal-minVal-maxVal)/(num-2);
+}
+
+float AnalogSensor::valueRange(float value, float minVal, float maxVal)
+{
+  if(value < minVal) return minVal;
+  if(value > maxVal) return maxVal;
+
+  return value;
 }

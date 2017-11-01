@@ -98,7 +98,7 @@ class ModbusMeter
     //static const uint8_t dts353ADUSize          = 0x08;   //Application Data Unit Size
 
     // Modbus timeout [milliseconds]
-    static const uint16_t ku16MBResponseTimeout          = 1000; ///< Modbus timeout [milliseconds]
+    static const uint16_t ku16MBResponseTimeout          = 500; ///< Modbus timeout [milliseconds]
 };
 
 #endif

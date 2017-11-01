@@ -1,0 +1,59 @@
+{
+  "global" : {
+    "type" : 2,
+    "interval" : 60,
+    "meters" : 2,
+    "wifi" : [
+      {
+        "ssid" : "FITB Room",
+        "pass" : "fuelintheblank"
+      },
+      {
+        "ssid" : "Claro Internet",
+        "pass" : "3CBEFBB2"
+      },
+      {
+        "ssid" : "TOT-Home92/215_2.4G_plus",
+        "pass" : "0894541262"
+      },
+      {
+        "ssid" : "",
+        "pass" : ""
+      },
+      {
+        "ssid" : "",
+        "pass" : ""
+      }
+    ],
+    "url" : "www.enres.co",
+    "token" : "ADTmADTneoUVdMuaGnUcLNYdWNEjEh",
+    "batch" : 10,
+    "path" : "/api/data",
+    "batch_path" : "/api/data_batch",
+    "path_sensor" : "/api/data_sensor",
+    "batch_path_sensor" : "/api/data_sensor_batch"
+  },
+  "meter" : [
+    {
+      "id" : "1",
+      "xid": "501",
+      "type" : "1",
+      "index": "0",
+      "adjust" : [1,1,1,1,1,1,1,1,1,1]
+    },
+    {
+      "id" : "2",
+      "xid": "502",
+      "type" : "1",
+      "index": "0",
+      "adjust" : [1,1,1,1,1,1,1,1,1,1]
+    }
+  ],
+  "sensor" : {
+    "used" : [1, 1],
+    "xid" : [45002, 45003],
+    "pin" : [36, 39, 34, 35, 32, 33, 34, 35],
+    "type" : [1, 1, 0, 0, 4, 4, 0, 0],
+    "adjust" : [[1.0241,-1.4521], [1.0241,-1.4521], [1,0], [1,0], [0.9616,0.5894], [0.9616,0.5894], [1,0], [1,0]]
+  }
+}

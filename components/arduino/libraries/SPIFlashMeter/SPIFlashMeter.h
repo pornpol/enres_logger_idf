@@ -11,6 +11,8 @@ class SPIFlashMeter
     bool begin(uint8_t recordSize, Stream& debug);
     bool writeMeterData(uint32_t, uint8_t*, uint32_t);
     bool readMeterData(uint32_t, uint8_t*, uint32_t);
+    bool writeSensorData(uint32_t, uint8_t*, uint32_t);
+    bool readSensorData(uint32_t, uint8_t*, uint32_t);
     uint32_t getMaxRecord();
 
     bool writeConfigFlash(String);
