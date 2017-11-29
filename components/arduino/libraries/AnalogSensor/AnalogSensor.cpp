@@ -2,16 +2,26 @@
 
 AnalogSensor::AnalogSensor()
 {
-
+  pinMode(ADC_SPI_CS, OUTPUT);
+  
+  // set initial PIN state
+  digitalWrite(ADC_SPI_CS, HIGH);
 }
 
-bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MAX])
+bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MAX], uint8_t adcExt)
 {
+  // SPISettings settings(1600000, MSBFIRST, SPI_MODE0);
+  // SPI.begin();
+  // SPI.beginTransaction(settings);
+
   for(uint8_t i=0; i<ANALOG_CH_MAX; i++)
   {
     _sensorPin[i] = pins[i];
     _sensorType[i] = types[i];
   }
+
+  _adcExt = adcExt;
+
   return true;
 }
 
@@ -62,6 +72,9 @@ float AnalogSensor::calSensor(uint8_t type, uint16_t value)
 
 float AnalogSensor::getAdcVoltage(uint16_t value)
 {
+  if(_adcExt == 1)
+    return (value/4095.0)*3.3;
+
   for(uint8_t i=0; i<NUM_ADC_TABLE; i++)
   {
     if(value == 0) return 0;
@@ -83,7 +96,19 @@ uint16_t AnalogSensor::getAvgAdc(uint8_t num, uint8_t ch)
 
   for(uint8_t i=0; i<num; i++)
   {
-    val = analogRead(_sensorPin[ch]);
+    if(_adcExt == 0)
+    {
+      val = analogRead(_sensorPin[ch]);
+    }
+    else
+    {
+      SPISettings settings(1600000, MSBFIRST, SPI_MODE0);
+      //SPI.begin();
+      SPI.beginTransaction(settings);
+      val = adc.read((MCP3208::Channel)(0b1000+ch));
+      //Serial.printf("Raw Ext ADC CH%d : %d\r\n", ch, val);
+    }
+
     if(val < minVal) minVal = val;
     if(val > maxVal) maxVal = val;
     sumVal += val;

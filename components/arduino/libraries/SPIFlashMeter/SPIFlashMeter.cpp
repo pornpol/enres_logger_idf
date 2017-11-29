@@ -78,6 +78,34 @@ bool SPIFlashMeter::readSensorData(uint32_t index, uint8_t *buff, uint32_t buff_
     return _flash.readByteArray(addr, buff, buff_size);
 }
 
+//buff 64
+bool SPIFlashMeter::writeFlowData(uint32_t index, uint8_t *buff, uint32_t buff_size)
+{
+  uint32_t addr = (index%_maxRecord)*_recordSize + _reserveSize; //Cal Address from Chip Size, NumMeter
+  uint8_t numRec = buff_size/_recordSize;
+
+  for(uint8_t i=0; i<numRec; i++)
+  {
+    //first index of page
+    if((index+i)%(_sectorSize/_recordSize) == 0)
+    {
+      //erase that _sector
+      _flash.eraseSector(((index+i)%_maxRecord)*_recordSize + _reserveSize);
+      _debug->printf("Erase Address : %d\r\n", ((index+i)%_maxRecord)*_recordSize);
+    }
+  }
+  //Erase page that write in first time
+  return _flash.writeByteArray(addr, buff, buff_size, true);
+}
+
+//buff 32 or 64s
+bool SPIFlashMeter::readFlowData(uint32_t index, uint8_t *buff, uint32_t buff_size)
+{
+  uint32_t addr = (index%_maxRecord)*_recordSize + _reserveSize; //Cal Address from Chip Size, NumMeter
+
+  return _flash.readByteArray(addr, buff, buff_size);
+}
+
 uint32_t SPIFlashMeter::getMaxRecord()
 {
   return _maxRecord;

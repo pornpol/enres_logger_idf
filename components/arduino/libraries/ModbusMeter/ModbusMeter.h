@@ -45,7 +45,7 @@ class ModbusMeter
     void postTransmission(void (*)());
 
     /*_____READ HOLDING REGISTER_____*/
-    uint8_t readMeterData(uint8_t, uint8_t, uint8_t, time_t, float*);
+    uint8_t readMeterData(uint8_t, uint8_t, uint8_t, uint8_t, time_t, float*);
 
     /*_____READ DATA FROM BUFFER_____*/
     uint16_t getResponseBuffer(uint8_t);
@@ -72,7 +72,7 @@ class ModbusMeter
     // postTransmission callback function; gets called after a Modbus message has been sent
     void (*_postTransmission)();
 
-    uint8_t masterTransaction(uint8_t slave, uint16_t startAddress, uint16_t readQty);
+    uint8_t masterTransaction(uint8_t slave, uint16_t startAddress, uint16_t readQty, uint8_t fnRead);
     float wordToFloat(uint16_t h, uint16_t l);
     uint32_t u16Tou32(uint16_t h, uint16_t l);
 
@@ -90,7 +90,8 @@ class ModbusMeter
     static const uint8_t ku8MBMaskWriteRegister          = 0x16; ///< Modbus function 0x16 Mask Write Register
     static const uint8_t ku8MBReadWriteMultipleRegisters = 0x17; ///< Modbus function 0x17 Read Write Multiple Registers
 
-    static const uint8_t dts353                 = 0x01;
+    static const uint8_t dts353   = 0x01;
+    static const uint8_t eastron  = 0x02;          
 
     //Power Meter DTS-353 Protocol Parameter
     //static const uint16_t dts353DataLength      = 0x0006; //Data Length = 38

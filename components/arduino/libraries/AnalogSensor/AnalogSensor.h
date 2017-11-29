@@ -3,14 +3,19 @@
 
 #include "Arduino.h"
 #include "Math.h"
+#include "SPI.h"
+#include "Mcp3208.h"
 
 #define ANALOG_CH_MAX 8
+
+#define ADC_SPI_CS    4
+#define ADC_VREF      3300     // 3.3V Vref
 
 class AnalogSensor
 {
   public:
     AnalogSensor();
-    bool begin(uint8_t[ANALOG_CH_MAX], uint8_t[ANALOG_CH_MAX]); // ch & type
+    bool begin(uint8_t[ANALOG_CH_MAX], uint8_t[ANALOG_CH_MAX], uint8_t); // ch & type
     float getSensor(uint8_t);
 
     static const uint8_t sensorNone       = 0;
@@ -21,8 +26,11 @@ class AnalogSensor
     static const uint8_t sensorPress      = 5;
 
   private:
+    MCP3208 adc = MCP3208(3300,4);
+
     uint8_t _sensorPin[ANALOG_CH_MAX];
     uint8_t _sensorType[ANALOG_CH_MAX];
+    uint8_t _adcExt;
 
     // 0 - 3.3 Volt = 0.05 volt/step
     static const uint8_t NUM_ADC_TABLE = 67;

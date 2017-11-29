@@ -26,6 +26,7 @@ class SDConfig
       uint8_t type;
       uint16_t interval;
       uint8_t numMeter;
+      uint8_t adcExt;
       String wifiSsid[MAXSSID];
       String wifiPass[MAXSSID];
       String url;
@@ -57,6 +58,14 @@ class SDConfig
       float adjust[8][8];
     } configSensor;
     configSensor cfgS;
+
+    typedef struct __configFlow
+    {
+      uint8_t id;
+      uint32_t xid;
+      float adjust[9];
+    } configFlow;
+    configFlow cfgF;
 
   private:
     bool phaseConfig(String config);

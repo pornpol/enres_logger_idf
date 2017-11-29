@@ -67,6 +67,7 @@ bool SDConfig::phaseConfig(String config)
   cfgG.type = root["global"]["type"];
   cfgG.interval = root["global"]["interval"];
   cfgG.numMeter = root["global"]["meters"];
+  cfgG.adcExt = root["global"]["adc_ext"];
   for(uint8_t i=0; i<MAXSSID; i++)
   {
     cfgG.wifiSsid[i] = root["global"]["wifi"][i]["ssid"].as<String>();
@@ -107,6 +108,13 @@ bool SDConfig::phaseConfig(String config)
       cfgS.adjust[i][j] = root["sensor"]["adjust"][i][j];
     }
   }
+
+  cfgF.id = root["flow"]["id"];
+  cfgF.xid = root["flow"]["xid"];
+  for(uint8_t i=0; i<9; i++)
+  {
+    cfgF.adjust[i] = root["flow"]["adjust"][i];
+  } 
 
   return true;
 }

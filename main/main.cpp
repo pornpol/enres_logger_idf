@@ -1,5 +1,6 @@
 #include <RTClib.h>
 #include <ModbusMeter.h>
+#include <ModbusFlow.h>
 #include <SDConfig.h>
 #include <SPIFlashMeter.h>
 #include <AnalogSensor.h>
@@ -26,13 +27,16 @@
 //#define FLASH_SIZE        128  //Mb
 #define GMT               7
 
+#define ADC_INT           0
+#define ADC_EXT           1
+
 #define RECSIZE           64  // 40 bytes >> 64
 #define MAXMETER          21  //
 #define RECSIZESENSOR     64  // 2 Group Hot & Cold
 
 #define MAXPOST           6   // Max Single Post count per Loop
 
-#define POSTSAVETIME      10  // Time to prevent to POST loop before next read meter loop
+#define POSTSAVETIME      10  // (Sec) Time to prevent to POST loop before next read meter loop 
 
 #define UNDERLINE         Serial.println("------------------------")
 
@@ -40,11 +44,13 @@
 
 #define SRAM_ADDRESS      MCP7940_NVRAM
 
+#define SERVER_CHK_INT    60000 // millisecond
 // Define HardwareSerial(2) for Modbus Communication
 HardwareSerial Serial2(2);
 
 ModbusMeter meter;
 SDConfig sd;
+ModbusFlow flow;
 SPIFlashMeter flash;
 RTC_MCP7940 rtc;
 AnalogSensor sensor;
@@ -69,7 +75,10 @@ bool tAdj = false;
 //uint8_t fErrorCnt = 0;
 //#define FLASH_ERROR_MAX 5
 
-uint32_t cntChk = 0;
+uint32_t serverCntChk = 0;
+
+uint64_t espChipID = 0;
+String espChipID_str;
 
 void preTransmission()
 {
@@ -145,11 +154,11 @@ bool meterToFlash()
     index += 2;
     *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].varh * 100);      //[0.00, 42,949,672.95]
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint16_t)(meter.md[i].i0 * 100);        //[0.00, 42,949,672.95]
+    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i0 * 100);        //[0.00, 42,949,672.95]
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint16_t)(meter.md[i].i1 * 100);        //[0.00, 42,949,672.95]
+    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i1 * 100);        //[0.00, 42,949,672.95]
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint16_t)(meter.md[i].i2 * 100);        //[0.00, 42,949,672.95]
+    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i2 * 100);        //[0.00, 42,949,672.95]
     index += 4;
     *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v0 * 10);        //[0.00, 6553.5]
     index += 2;
@@ -268,15 +277,17 @@ void flashMeterToPost(uint32_t num)
     Serial.print("PATH: ");
     Serial.println(path);
 
-    Serial.print("PL: ");
-    Serial.println(playload);
+    //Serial.print("PL: ");
+    //Serial.println(playload);
 
     HTTPClient http;
 
     http.begin("http://" + host + path);
     http.addHeader("Content-Type", "application/json");
 
+    hwdt.disable();
     uint16_t httpCode = http.POST(playload);
+    hwdt.enable();
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
       return;
@@ -378,15 +389,18 @@ void flashMeterToBatchPost(uint32_t num)
   Serial.print("PATH: ");
   Serial.println(path);
 
-  Serial.print("PL: ");
-  Serial.println(playload);
+  //Serial.print("PL: ");
+  //Serial.println(playload);
 
   HTTPClient http;
 
   http.begin("http://" + host + path);
   http.addHeader("Content-Type", "application/json");
 
+  hwdt.disable();
   uint16_t httpCode = http.POST(playload);
+  hwdt.enable();
+
   if (httpCode != 200) {
     Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
     return;
@@ -409,7 +423,7 @@ void ReadMeterToFlash_Task()
   /////////////// Energy Meter /////////////////
   for(uint8_t i = 0; i<sd.cfgG.numMeter; i++)
   {
-    if(!meter.readMeterData(i, sd.cfgM[i].id, sd.cfgM[i].type, mktime(&timeinfo), sd.cfgM[i].adjust))
+    if(!meter.readMeterData(i, sd.cfgM[i].id, sd.cfgM[i].index, sd.cfgM[i].type, mktime(&timeinfo), sd.cfgM[i].adjust))
     {
       Serial.printf("Read Meter ID:%d OK\r\n", sd.cfgM[i].id);
     } 
@@ -611,8 +625,8 @@ void flashSensorToBatchPost(uint32_t num)
     Serial.print("PATH: ");
     Serial.println(path);
   
-    Serial.print("PL: ");
-    Serial.println(playload);
+    //Serial.print("PL: ");
+    //Serial.println(playload);
   
     HTTPClient http;
   
@@ -688,10 +702,278 @@ void ReadFlashSensorToPost_Task()
 }
 /////////////////////////////////// End Sensor /////////////////////////////
 
+//////////////////////////////////// Flow //////////////////////////////////
+bool flowToFlash()
+{
+  uint16_t index = 0;
+  
+  // inst_flux ins_heat_flow tm1 tm2 signal_ratio reynolds q_str up_str down_str
+  *(uint32_t*)&wBuff[index] = sd.cfgF.xid;   //[0, 4,294,967,295]
+  index += 4;
+  *(uint32_t*)&wBuff[index] = flow.fd.mdt;  //[0, 4,294,967,295]
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.inst_flux;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.ins_heat_flow;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.tm1;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.tm2;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.signal_ratio;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.reynolds;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.q_str;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.up_str;
+  index += 4;
+  *(float*)&wBuff[index] = flow.fd.down_str;
+  index += 4;
+
+  for(int i = index; (i%RECSIZE)>0; i++) //Zero padding
+  {  
+      wBuff[index] = 0;
+      index++;
+  }
+  
+  Serial.printf("Write Index : %d\r\n", wIndex);
+
+  if(flash.writeFlowData(wIndex, wBuff, RECSIZE))
+  {
+    Serial.println("Flash Write OK");
+    wIndex += 1;
+    // Save to RTC
+    setWIndex();
+    Serial.printf("Next Write Index : %d\r\n", wIndex);
+    UNDERLINE;
+  }
+  else 
+  {
+    Serial.println("Flash Write Not OK!!!!");
+    UNDERLINE;
+  }
+  
+  return true;
+}
+
+void flashFlowToPost(uint32_t num)
+{
+}
+
+void flashFlowToBatchPost(uint32_t num)
+{
+  uint16_t index = 0;
+  
+    Serial.printf("Read Index : %d\r\n", rIndex);
+    if(flash.readFlowData(rIndex, rBuff, RECSIZE*num))
+    {
+      Serial.println("Read Flash OK");
+      UNDERLINE;
+    }
+    else
+    {
+      Serial.println("Read Flash Error!!!");
+      UNDERLINE;
+      return;
+    }
+  
+    String playload = "[";
+    String path = sd.cfgG.batch_path_sensor;
+    String host = sd.cfgG.url;
+  
+    path = path + "?access_token=" + sd.cfgG.token;
+    
+    for(int i=0; i<num; i++)
+    {
+      playload = playload + "{\"external_sensor_id\":\"" + String(*(uint32_t*)&rBuff[index]) + "\",";
+      index += 4;
+  
+      char tbuff[64];
+      struct tm *time_tm;
+      time_t time_unix = *(uint32_t*)&rBuff[index];
+      time_tm = localtime(&time_unix);
+      strftime(tbuff, 64, "%Y%m%d%H%M", time_tm);
+      
+      playload = playload + "\"sdt\":\"" + String(tbuff) + "\",";
+      index += 4;
+  
+      playload = playload + "\"vd1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd2\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd3\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd4\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd5\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd6\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd7\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd8\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+      index += 4;
+  
+      playload = playload + "\"vd9\":" + String(((*(float*)&rBuff[index])), 4) + "}";
+      index += 4;
+  
+      if(i+1<num) playload = playload + ",";
+  
+      for(int i = index; (i%RECSIZE)>0; i++)
+      {
+        index++;
+      }
+    }
+  
+    playload = playload + "]";
+  
+    Serial.print("HOST: ");
+    Serial.println(host);
+  
+    Serial.print("PATH: ");
+    Serial.println(path);
+  
+    //Serial.print("PL: ");
+    //Serial.println(playload);
+  
+    HTTPClient http;
+  
+    http.begin("http://" + host + path);
+    http.addHeader("Content-Type", "application/json");
+  
+    hwdt.disable();
+    uint16_t httpCode = http.POST(playload);
+    hwdt.enable();
+  
+    if (httpCode != 200) {
+      Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+      return;
+    } else
+    {
+      Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+    }
+    http.end();
+    UNDERLINE;
+    
+    rIndex += num;
+    // Save to RTC
+    setRIndex();
+    Serial.printf("Next Read Index : %d\r\n", rIndex);
+    UNDERLINE;
+}
+
+void ReadFlowToFlash_Task()
+{
+  if(!flow.readFlowData(sd.cfgF.id, mktime(&timeinfo), sd.cfgF.adjust))
+  {
+    Serial.printf("Read Flow ID:%d OK\r\n", sd.cfgF.id);
+  } 
+  else
+  {
+    Serial.printf("Read Flow ID:%d Error\r\n", sd.cfgF.id);
+    return;
+  }
+  esp_task_wdt_feed();
+  hwdt.kickDog();
+
+  UNDERLINE;
+
+  // Write data to flash << Must Check Data already read and update
+  if(flowToFlash()) 
+    lastTime = mktime(&timeinfo);  
+}
+
+void ReadFlashFlowToPost_Task()
+{
+  static uint32_t disCnt = 0;
+  
+  if(wifiMulti.run() == WL_CONNECTED)
+  {
+    // Set LED to show WiFi Status
+    digitalWrite(LED_BUILTIN, LOW);
+    // Has Data to POST
+    if(rIndex < wIndex)
+    {
+      uint32_t numPost = wIndex - rIndex;
+
+      if(sd.cfgG.batch == 0)
+      {
+        if(numPost > MAXPOST) numPost = MAXPOST; // Set Max POST per loop to prevent read meter 
+        Serial.printf("Number(s) to POST : %d\r\n", numPost);
+        flashFlowToPost(numPost);
+      }
+      else
+      {
+        if(numPost > sd.cfgG.batch) numPost = sd.cfgG.batch;
+        Serial.printf("Number(s) to POST : %d\r\n", numPost);
+        flashFlowToBatchPost(numPost);
+      }
+    }
+    disCnt = millis();
+  }
+  else
+  {
+    // Retry Every 5 Sec.
+    if(millis()-disCnt > WIFIRETRY)
+    {
+      digitalWrite(LED_BUILTIN, HIGH);
+      Serial.println("WiFi Not Connecting");
+      UNDERLINE;
+      disCnt = millis();
+      hwdt.kickDog();
+    }
+  }
+}
+/////////////////////////////////// End Flow //////////////////////////////
+
+void serverChkTask()
+{
+  HTTPClient http;
+  
+  http.begin("http://www.iotcmd.co/api/enres/nreq/" + espChipID_str);
+  //http.addHeader("Content-Type", "application/json");
+  
+  hwdt.disable();
+  uint16_t httpCode = http.GET();
+  hwdt.enable();
+  if (httpCode != 200) {
+    Serial.println("ENRES Error code: " + String(httpCode));
+    return;
+  } else
+  {
+    Serial.println("ENRES GET REQ ok: " + String(httpCode));
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(http.getString());
+
+    if(uint8_t(root["restart"]) == 1)
+    {
+      Serial.println("Request to Restart");
+      delay(1000);
+      ESP.restart();
+    }
+  }
+  http.end();
+}
+
 void setup()
 {
   esp_task_wdt_feed();
-  
+
+  // Get ESP Chip id
+  char buff[12];
+  espChipID = ESP.getEfuseMac();
+  sprintf(buff, "%04X", (uint16_t)(espChipID>>32));
+  sprintf(buff+4, "%08X", (uint32_t)espChipID);
+  espChipID_str = String(buff);
+
   hwdt.begin(HWDT_KD, HWDT_EN);
   hwdt.kickDog();
 
@@ -706,31 +988,8 @@ void setup()
 
   // Init debug port
   Serial.begin(115200, SERIAL_8N1);
-  // Init Modbus communication runs at 9600 baud
 
-  // Init Modbus Meter Comunication
-  //Serial2.begin(9600, SERIAL_8E1);
-  //pinMode(16, INPUT_PULLUP);
-
-  const uart_port_t uart_num = UART_NUM_2;
-  uart_config_t uart_config = {
-    .baud_rate = 9600,
-    .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_EVEN,
-    .stop_bits = UART_STOP_BITS_1,
-    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    .rx_flow_ctrl_thresh = 122,
-  };
-  uart_param_config(uart_num, &uart_config);
-  uart_set_pin(uart_num, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-  uart_driver_install(uart_num, BUF_SIZE * 2, 0, 0, NULL, 0);
-  
-  uart_disable_rx_intr(UART_NUM_0);
-  //uart_enable_rx_intr(UART_NUM_0);
-
-  meter.begin(Serial2);
-  meter.preTransmission(preTransmission);
-  meter.postTransmission(postTransmission);
+  Serial.printf("ESP Chip ID : %s\r\n", espChipID_str.c_str());
 
   sd.begin(SD_CS, Serial);
 
@@ -750,8 +1009,42 @@ void setup()
 
   UNDERLINE;
 
+  // Init Modbus Meter Comunication
+  //Serial2.begin(9600, SERIAL_8E1);
+  //pinMode(16, INPUT_PULLUP);
+
+  const uart_port_t uart_num = UART_NUM_2;
+  uart_config_t uart_config = {
+    .baud_rate = 9600,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_EVEN,
+    //.parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+  };
+  if(sd.cfgG.type == 1)
+    uart_config.parity = UART_PARITY_EVEN;
+  else if(sd.cfgG.type == 3)
+    uart_config.parity = UART_PARITY_DISABLE;
+  
+  uart_param_config(uart_num, &uart_config);
+  uart_set_pin(uart_num, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_driver_install(uart_num, BUF_SIZE * 2, 0, 0, NULL, 0);
+  
+  uart_disable_rx_intr(UART_NUM_0);
+  //uart_enable_rx_intr(UART_NUM_0);
+
+  meter.begin(Serial2);
+  meter.preTransmission(preTransmission);
+  meter.postTransmission(postTransmission);
+
+  flow.begin(Serial2);
+  flow.preTransmission(preTransmission);
+  flow.postTransmission(postTransmission);
+
   // Init Sensor
-  sensor.begin(sd.cfgS.pin, sd.cfgS.type);
+  sensor.begin(sd.cfgS.pin, sd.cfgS.type, sd.cfgG.adcExt);
 
   // Init Rtc
   // Check RTC RAM and update wIndex & rIndex
@@ -841,6 +1134,8 @@ void loop()
       ReadMeterToFlash_Task();
     else if(sd.cfgG.type == 2)
       ReadSensorToFlash_Task();
+    else if(sd.cfgG.type == 3)
+      ReadFlowToFlash_Task();
   }
 
   esp_task_wdt_feed();
@@ -852,12 +1147,17 @@ void loop()
       ReadFlashMeterToPost_Task();
     else if(sd.cfgG.type == 2)
       ReadFlashSensorToPost_Task();
-  }
+    else if(sd.cfgG.type == 3)
+      ReadFlashFlowToPost_Task();
 
-  // For Test
-  // if(millis()-cntChk > 10000)
-  // {
-  //   Serial.println("Running...");
-  //   cntChk = millis();
-  // }
+    //For Server Chk
+    if(millis()-serverCntChk > SERVER_CHK_INT)
+    {
+      serverCntChk = millis();
+      Serial.println("Server Checking...");
+      serverChkTask();
+    } 
+  }
 }
+
+
