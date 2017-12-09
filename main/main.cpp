@@ -146,26 +146,49 @@ bool meterToFlash()
     index += 4;
     *(uint32_t*)&wBuff[index] = meter.md[i].mdt;  //[0, 4,294,967,295]
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].watt * 100);      //[0.00, 42,949,672.95]
+    
+    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].watt * 100);      //[0.00, 42,949,672.95]
+    // index += 4;
+    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].wattHour * 100);  //[0.00, 42,949,672.95]
+    // index += 4;
+    // *(int16_t*)&wBuff[index] = (int16_t)(meter.md[i].pf * 100);         //[-1.28,1.27]
+    // index += 2;
+    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].varh * 100);      //[0.00, 42,949,672.95]
+    // index += 4;
+    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i0 * 100);        //[0.00, 42,949,672.95]
+    // index += 4;
+    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i1 * 100);        //[0.00, 42,949,672.95]
+    // index += 4;
+    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i2 * 100);        //[0.00, 42,949,672.95]
+    // index += 4;
+    // *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v0 * 10);        //[0.00, 6553.5]
+    // index += 2;
+    // *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v1 * 10);        //[0.00, 6553.5]
+    // index += 2;
+    // *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v2 * 10);        //[0.00, 6553.5]
+    // index += 2;
+ 
+    *(float*)&wBuff[index] = meter.md[i].watt;
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].wattHour * 100);  //[0.00, 42,949,672.95]
+    *(float*)&wBuff[index] = meter.md[i].wattHour;
     index += 4;
-    *(int16_t*)&wBuff[index] = (int16_t)(meter.md[i].pf * 100);         //[-1.28,1.27]
-    index += 2;
-    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].varh * 100);      //[0.00, 42,949,672.95]
+    *(float*)&wBuff[index] = meter.md[i].pf;
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i0 * 100);        //[0.00, 42,949,672.95]
+    *(float*)&wBuff[index] = meter.md[i].varh;
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i1 * 100);        //[0.00, 42,949,672.95]
+    *(float*)&wBuff[index] = meter.md[i].i0;
     index += 4;
-    *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i2 * 100);        //[0.00, 42,949,672.95]
+    *(float*)&wBuff[index] = meter.md[i].i1;
     index += 4;
-    *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v0 * 10);        //[0.00, 6553.5]
-    index += 2;
-    *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v1 * 10);        //[0.00, 6553.5]
-    index += 2;
-    *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v2 * 10);        //[0.00, 6553.5]
-    index += 2;
+    *(float*)&wBuff[index] = meter.md[i].i2;
+    index += 4;
+    *(float*)&wBuff[index] = meter.md[i].v0;
+    index += 4;
+    *(float*)&wBuff[index] = meter.md[i].v1;
+    index += 4;
+    *(float*)&wBuff[index] = meter.md[i].v2;
+    index += 4;
+    
     for(int i = index; (i%RECSIZE)>0; i++) //Zero padding
     {  
         wBuff[index] = 0;
@@ -236,35 +259,65 @@ void flashMeterToPost(uint32_t num)
     playload = playload + "\"mdt\":\"" + String(tbuff) + "\",";
     index += 4;
 
-    playload = playload + "\"w\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // playload = playload + "\"w\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"wh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"pf\":" + String(((float)(*(int16_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 2;
+
+    // playload = playload + "\"varh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"i0\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"i1\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"i2\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"v0\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
+    // index += 2;
+
+    // playload = playload + "\"v1\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
+    // index += 2;
+
+    // playload = playload + "\"v2\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + "}]";
+    // index += 2;
+
+    playload = playload + "\"w\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"wh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"wh\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"pf\":" + String(((float)(*(int16_t*)&rBuff[index]))/100, 2) + ",";
-    index += 2;
-
-    playload = playload + "\"varh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"pf\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"i0\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"varh\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"i1\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"i0\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"i2\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"i1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"v0\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    index += 2;
+    playload = playload + "\"i2\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+    index += 4;
 
-    playload = playload + "\"v1\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    index += 2;
+    playload = playload + "\"v0\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+    index += 4;
 
-    playload = playload + "\"v2\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + "}]";
-    index += 2;
+    playload = playload + "\"v1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+    index += 4;
+
+    playload = playload + "\"v2\":" + String(((*(float*)&rBuff[index])), 4) + "}]";
+    index += 4;
 
     for(int i = index; (i%RECSIZE)>0; i++)
     {
@@ -343,35 +396,65 @@ void flashMeterToBatchPost(uint32_t num)
     playload = playload + "\"mdt\":\"" + String(tbuff) + "\",";
     index += 4;
 
-    playload = playload + "\"w\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // playload = playload + "\"w\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"wh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"pf\":" + String(((float)(*(int16_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 2;
+
+    // playload = playload + "\"varh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"i0\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"i1\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"i2\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    // index += 4;
+
+    // playload = playload + "\"v0\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
+    // index += 2;
+
+    // playload = playload + "\"v1\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
+    // index += 2;
+
+    // playload = playload + "\"v2\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + "}";
+    // index += 2;
+
+    playload = playload + "\"w\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"wh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"wh\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"pf\":" + String(((float)(*(int16_t*)&rBuff[index]))/100, 2) + ",";
-    index += 2;
-
-    playload = playload + "\"varh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"pf\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"i0\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"varh\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"i1\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"i0\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"i2\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
+    playload = playload + "\"i1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
 
-    playload = playload + "\"v0\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    index += 2;
+    playload = playload + "\"i2\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+    index += 4;
 
-    playload = playload + "\"v1\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    index += 2;
+    playload = playload + "\"v0\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+    index += 4;
 
-    playload = playload + "\"v2\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + "}";
-    index += 2;
+    playload = playload + "\"v1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+    index += 4;
+
+    playload = playload + "\"v2\":" + String(((*(float*)&rBuff[index])), 4) + "}";
+    index += 4;
 
     if(i+1<num) playload = playload + ",";
 
