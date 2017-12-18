@@ -44,7 +44,12 @@
 
 #define SRAM_ADDRESS      MCP7940_NVRAM
 
-#define SERVER_CHK_INT    60000 // millisecond
+#define SERVER_CHK_INT    ((5)*60000) // millisecond (5 Minute)
+
+#define RST_CHK_INT    ((1)*(86400000)) // millisecond (1 Day)
+
+//#define SNTP_UPDATE_DELAY 900000 //change from 60 (3600000) to 15 minute
+
 // Define HardwareSerial(2) for Modbus Communication
 HardwareSerial Serial2(2);
 
@@ -75,7 +80,8 @@ bool tAdj = false;
 //uint8_t fErrorCnt = 0;
 //#define FLASH_ERROR_MAX 5
 
-uint32_t serverCntChk = 0;
+uint32_t serverMillisChk = 0;
+uint32_t rstMillisChk = 0;
 
 uint64_t espChipID = 0;
 String espChipID_str;
@@ -1057,6 +1063,7 @@ void setup()
   sprintf(buff+4, "%08X", (uint32_t)espChipID);
   espChipID_str = String(buff);
 
+  // Enable Hardware kickDog
   hwdt.begin(HWDT_KD, HWDT_EN);
   hwdt.kickDog();
 
@@ -1074,9 +1081,10 @@ void setup()
 
   Serial.printf("ESP Chip ID : %s\r\n", espChipID_str.c_str());
 
+  // Init SD
   sd.begin(SD_CS, Serial);
 
- // Init Flash
+  // Init Flash
   if(!flash.begin(RECSIZE, Serial)) 
   {
     delay(1000);
@@ -1151,6 +1159,7 @@ void setup()
     getRIndex();
   }
 
+  // Connect to Wifi
   hwdt.disable();
   wifiConnect();
   hwdt.enable();
@@ -1208,6 +1217,7 @@ void loop()
   esp_task_wdt_feed();
   hwdt.kickDog();
 
+  // Read Data to Flash
   if(mktime(&timeinfo)-lastTime >= sd.cfgG.interval)
   {
     Serial.println(&timeinfo);
@@ -1224,6 +1234,7 @@ void loop()
   esp_task_wdt_feed();
   hwdt.kickDog();
 
+  // Read Flash to Post
   if(mktime(&timeinfo)-lastTime < sd.cfgG.interval-POSTSAVETIME)
   {
     if(sd.cfgG.type == 1)
@@ -1231,16 +1242,23 @@ void loop()
     else if(sd.cfgG.type == 2)
       ReadFlashSensorToPost_Task();
     else if(sd.cfgG.type == 3)
-      ReadFlashFlowToPost_Task();
-
-    //For Server Chk
-    if(millis()-serverCntChk > SERVER_CHK_INT)
-    {
-      serverCntChk = millis();
-      Serial.println("Server Checking...");
-      serverChkTask();
-    } 
+      ReadFlashFlowToPost_Task();  
   }
+
+  // Server Chk
+  if(millis()-serverMillisChk > SERVER_CHK_INT)
+  {
+    serverMillisChk = millis();
+    Serial.println("Server Checking...");
+    serverChkTask();
+  }
+  
+  // Interval Reset Chk
+  if(millis()-rstMillisChk > RST_CHK_INT)
+  {
+    rstMillisChk = millis();
+    Serial.println("Device Routine Resetting...");
+    delay(1000);
+    ESP.restart();
+  }  
 }
-
-
