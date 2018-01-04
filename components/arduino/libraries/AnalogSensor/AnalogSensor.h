@@ -24,6 +24,7 @@ class AnalogSensor
     static const uint8_t sensorHotTempT2  = 3;
     static const uint8_t sensorHotTempT3  = 4;
     static const uint8_t sensorPress      = 5;
+    static const uint8_t sensorTemp420    = 6;
 
   private:
     MCP3208 adc = MCP3208(3300,4);

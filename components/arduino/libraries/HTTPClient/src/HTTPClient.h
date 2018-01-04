@@ -31,7 +31,7 @@
 #include <Arduino.h>
 #include <WiFiClient.h>
 
-#define HTTPCLIENT_DEFAULT_TCP_TIMEOUT (5000)
+#define HTTPCLIENT_DEFAULT_TCP_TIMEOUT (2500)
 
 /// HTTP client errors
 #define HTTPC_ERROR_CONNECTION_REFUSED  (-1)

@@ -46,7 +46,36 @@
 
 #define SERVER_CHK_INT    ((5)*60000) // millisecond (5 Minute)
 
-#define RST_CHK_INT    ((1)*(86400000)) // millisecond (1 Day)
+#define RST_CHK_INT    ((7)*(86400000)) // millisecond (7 Day)
+
+//#define IOTCMD_SERVER     "128.199.176.159"
+#define IOTCMD_SERVER     "www.iotcmd.co"
+
+typedef union
+{
+  struct
+  {
+    uint16_t restart : 1;   // bit0
+    uint16_t power : 1;     // bit1
+    uint16_t network : 1;   // bit2
+    uint16_t sdcard : 1;    // bit3
+    uint16_t spiflash : 1;  // bit4
+    uint16_t sensor : 1;    // bit5
+    uint16_t server : 1;    // bit6
+    uint16_t wifi : 1;      // bit7
+    uint16_t bit8 : 1;
+    uint16_t bit9 : 1;
+    uint16_t bit10 : 1;
+    uint16_t bit11 : 1;
+    uint16_t bit12 : 1;
+    uint16_t bit13 : 1;
+    uint16_t bit14 : 1;
+    uint16_t bit15 : 1;
+  }e;
+  uint16_t status;
+}DeviceStatus;
+
+DeviceStatus errlog;
 
 //#define SNTP_UPDATE_DELAY 900000 //change from 60 (3600000) to 15 minute
 
@@ -77,8 +106,10 @@ WiFiMulti wifiMulti;
 
 bool tAdj = false;
 
-//uint8_t fErrorCnt = 0;
-//#define FLASH_ERROR_MAX 5
+uint8_t fErrorCnt = 0;
+#define FLASH_ERROR_MAX 3
+uint8_t fSecErrorCnt = 0;
+#define FLASH_SECTOR_ERROR_MAX 3
 
 uint32_t serverMillisChk = 0;
 uint32_t rstMillisChk = 0;
@@ -206,25 +237,35 @@ bool meterToFlash()
 
   if(flash.writeMeterData(wIndex, wBuff, RECSIZE*sd.cfgG.numMeter))
   {
-    //fErrorCnt = 0;
+    fErrorCnt = 0;
     Serial.println("Flash Write OK");
     wIndex += sd.cfgG.numMeter;
     // Save to RTC
     setWIndex();
     Serial.printf("Next Write Index : %d\r\n", wIndex);
     UNDERLINE;
+    errlog.e.spiflash = 0;
+    fErrorCnt = 0;
   }
   else 
   {
-    // fErrorCnt++;
     Serial.println("Flash Write Not OK!!!!");
     UNDERLINE;
-    // if(fErrorCnt >= FLASH_ERROR_MAX)
-    // {
-    //   fErrorCnt = 0;
-    //   wIndex += sd.cfgG.numMeter;
-    //   setWIndex();
-    // }
+    errlog.e.spiflash = 1;
+
+    fErrorCnt++;
+    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex) /*&& (fSecErrorCnt <= FLASH_SECTOR_ERROR_MAX)*/)
+    {
+      Serial.println("Move Flash Index to next sector!!!!");
+      fErrorCnt = 0;
+      wIndex = ((wIndex/64)+1)*64;
+      rIndex = wIndex;
+      setRIndex();
+      setWIndex();
+      //fSecErrorCnt++;
+    }
+    //return false;
+
   }
   
   return true;
@@ -349,10 +390,12 @@ void flashMeterToPost(uint32_t num)
     hwdt.enable();
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 1;
       return;
     } else
     {
       Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 0;
     }
     http.end();
     UNDERLINE;
@@ -492,10 +535,12 @@ void flashMeterToBatchPost(uint32_t num)
 
   if (httpCode != 200) {
     Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+    errlog.e.server = 1;
     return;
   } else
   {
     Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+    errlog.e.server = 0;
   }
   http.end();
   UNDERLINE;
@@ -515,10 +560,12 @@ void ReadMeterToFlash_Task()
     if(!meter.readMeterData(i, sd.cfgM[i].id, sd.cfgM[i].index, sd.cfgM[i].type, mktime(&timeinfo), sd.cfgM[i].adjust))
     {
       Serial.printf("Read Meter ID:%d OK\r\n", sd.cfgM[i].id);
+      errlog.e.sensor = 0;
     } 
     else
     {
       Serial.printf("Read Meter ID:%d Error\r\n", sd.cfgM[i].id);
+      errlog.e.sensor = 1;
       return;
     }
     esp_task_wdt_feed();
@@ -537,8 +584,10 @@ void ReadFlashMeterToPost_Task()
 {
   static uint32_t disCnt = 0;
   
+  hwdt.disable();
   if(wifiMulti.run() == WL_CONNECTED)
   {
+    hwdt.enable();
     // Set LED to show WiFi Status
     digitalWrite(LED_BUILTIN, LOW);
     // Has Data to POST
@@ -563,6 +612,7 @@ void ReadFlashMeterToPost_Task()
   }
   else
   {
+    hwdt.enable();
     // Retry Every 5 Sec.
     if(millis()-disCnt > WIFIRETRY)
     {
@@ -618,11 +668,28 @@ bool SensorToFlash()
     setWIndex();
     Serial.printf("Next Write Sensor Index : %d\r\n", wIndex);
     UNDERLINE;
+    errlog.e.spiflash = 0;
+    fErrorCnt = 0;
   }
   else 
   {
     Serial.println("Flash Write Not OK!!!!");
     UNDERLINE;
+    errlog.e.spiflash = 1;
+    
+    fErrorCnt++;
+    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex) /*&& (fSecErrorCnt <= FLASH_SECTOR_ERROR_MAX)*/)
+    {
+      Serial.println("Move Flash Index to next sector!!!!");
+      fErrorCnt = 0;
+      wIndex = ((wIndex/64)+1)*64;
+      rIndex = wIndex;
+      setRIndex();
+      setWIndex();
+      //fSecErrorCnt++;
+    }
+    //return false;
+
   }
   
   return true;
@@ -727,10 +794,12 @@ void flashSensorToBatchPost(uint32_t num)
     hwdt.enable();
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 1;
       return;
     } else
     {
       Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 0;
     }
     http.end();
     UNDERLINE;
@@ -753,8 +822,10 @@ void ReadFlashSensorToPost_Task()
 {
   static uint32_t disCnt = 0;
   
+  hwdt.disable();
   if(wifiMulti.run() == WL_CONNECTED)
   {
+    hwdt.enable();
     // Set LED to show WiFi Status
     digitalWrite(LED_BUILTIN, LOW);
     // Has Data to POST
@@ -779,6 +850,7 @@ void ReadFlashSensorToPost_Task()
   }
   else
   {
+    hwdt.enable();
     // Retry Every 5 Sec.
     if(millis()-disCnt > WIFIRETRY)
     {
@@ -786,6 +858,7 @@ void ReadFlashSensorToPost_Task()
       Serial.println("WiFi Not Connecting");
       UNDERLINE;
       disCnt = millis();
+      hwdt.kickDog();
     }
   }
 }
@@ -836,11 +909,28 @@ bool flowToFlash()
     setWIndex();
     Serial.printf("Next Write Index : %d\r\n", wIndex);
     UNDERLINE;
+    errlog.e.spiflash = 0;
+    fErrorCnt = 0;
   }
   else 
   {
     Serial.println("Flash Write Not OK!!!!");
     UNDERLINE;
+    errlog.e.spiflash = 1;
+    
+    fErrorCnt++;
+    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex) /*&& (fSecErrorCnt <= FLASH_SECTOR_ERROR_MAX)*/)
+    {
+      Serial.println("Move Flash Index to next sector!!!!");
+      fErrorCnt = 0;
+      wIndex = ((wIndex/64)+1)*64;
+      rIndex = wIndex;
+      setRIndex();
+      setWIndex();
+      //fSecErrorCnt++;
+    }
+    //return false;
+
   }
   
   return true;
@@ -944,10 +1034,12 @@ void flashFlowToBatchPost(uint32_t num)
   
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 1;
       return;
     } else
     {
       Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 0;
     }
     http.end();
     UNDERLINE;
@@ -984,8 +1076,10 @@ void ReadFlashFlowToPost_Task()
 {
   static uint32_t disCnt = 0;
   
+  hwdt.disable();
   if(wifiMulti.run() == WL_CONNECTED)
   {
+    hwdt.enable();
     // Set LED to show WiFi Status
     digitalWrite(LED_BUILTIN, LOW);
     // Has Data to POST
@@ -1010,6 +1104,7 @@ void ReadFlashFlowToPost_Task()
   }
   else
   {
+    hwdt.enable();
     // Retry Every 5 Sec.
     if(millis()-disCnt > WIFIRETRY)
     {
@@ -1023,33 +1118,111 @@ void ReadFlashFlowToPost_Task()
 }
 /////////////////////////////////// End Flow //////////////////////////////
 
-void serverChkTask()
+bool serverChkTask()
 {
-  HTTPClient http;
-  
-  http.begin("http://www.iotcmd.co/api/enres/nreq/" + espChipID_str);
-  //http.addHeader("Content-Type", "application/json");
+  Serial.println("Server Checking...");
   
   hwdt.disable();
-  uint16_t httpCode = http.GET();
-  hwdt.enable();
-  if (httpCode != 200) {
-    Serial.println("ENRES Error code: " + String(httpCode));
-    return;
-  } else
+  if(wifiMulti.run() == WL_CONNECTED)
   {
-    Serial.println("ENRES GET REQ ok: " + String(httpCode));
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.parseObject(http.getString());
-
-    if(uint8_t(root["restart"]) == 1)
+    hwdt.enable();
+    HTTPClient http;
+    
+    http.begin("http://"IOTCMD_SERVER"/api/enres/nreq/" + espChipID_str);
+    //http.addHeader("Content-Type", "application/json");
+    
+    hwdt.disable();
+    uint16_t httpCode = http.GET();
+    hwdt.enable();
+    if (httpCode != 200) {
+      Serial.println("ENRES Error code: " + String(httpCode));
+      errlog.e.server = 1;
+      return false;
+    } else
     {
-      Serial.println("Request to Restart");
-      delay(1000);
-      ESP.restart();
+      Serial.println("ENRES GET REQ ok: " + String(httpCode));
+      errlog.e.server = 0;
+      DynamicJsonBuffer jsonBuffer;
+      JsonObject& root = jsonBuffer.parseObject(http.getString());
+
+      if(uint8_t(root["restart"]) == 1)
+      {
+        Serial.println("Request to Restart");
+        delay(1000);
+        ESP.restart();
+      }
+      if(uint8_t(root["restart"]) == 2)
+      {
+        wIndex = 0;
+        rIndex = 0;
+        setWIndex();
+        setRIndex();
+
+        Serial.println("Request to Reset Flash Index");
+        delay(1000);
+        ESP.restart();
+      }
+      return true;
     }
+    http.end();
+  }else
+  {
+    hwdt.enable();
+    Serial.println("No Wifi Connection");
+    return false;
   }
-  http.end();
+  return false;
+}
+
+bool logPostTask()
+{
+  Serial.println("Log Posting...");
+  hwdt.disable();
+  if(wifiMulti.run() == WL_CONNECTED)
+  {
+    hwdt.enable();
+    HTTPClient http;
+
+    char tbuff[64];
+    strftime(tbuff, 64, "%Y%m%d%H%M", &timeinfo);
+
+    String playload = "[{";
+    playload = playload + "\"dt\":\"" + String(tbuff) + "\",";
+    playload = playload + "\"msg\":\"" + String(errlog.status) + "\"";
+    playload = playload + "}]";
+    
+    //Serial.print("HOST : ");
+    //Serial.println("http://"IOTCMD_SERVER"/api/enres/log/" + espChipID_str);
+
+    http.begin("http://"IOTCMD_SERVER"/api/enres/log/" + espChipID_str);
+    http.addHeader("Content-Type", "application/json");
+
+    hwdt.disable();
+    uint16_t httpCode = http.POST(playload);
+    hwdt.enable();
+
+    //if(httpCode == 200) errlog.status = 0;
+    //http.end();
+
+    if (httpCode != 200) {
+      Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 1;
+      return false;
+    } else
+    {
+      Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+      errlog.status = 0;
+    }
+    http.end();
+    return true;
+  }else
+  {
+    hwdt.enable();
+    Serial.println("No Wifi Connection");
+    return false;    
+  }
+
+  return false;
 }
 
 void setup()
@@ -1173,15 +1346,27 @@ void setup()
   Serial.printf("Year : %d\r\n", now.year());
   while(!(getLocalTime(&timeinfo, 1000) || (now.year() >= 2017)))
   {
+    esp_task_wdt_feed();
+    hwdt.disable();
     wifiMulti.run();
+    hwdt.enable();
   }
 
   hwdt.kickDog();
   esp_task_wdt_feed();
+
+  errlog.e.restart = 1;
+  
+  // Test Crash
+  // if(serverChkTask())
+  //    logPostTask();
 }
 
 void loop()
 { 
+  esp_task_wdt_feed();
+  hwdt.kickDog();
+
   if(getLocalTime(&timeinfo, 0))
   {
     // Set to HWRTC check mon and year
@@ -1230,7 +1415,7 @@ void loop()
     else if(sd.cfgG.type == 3)
       ReadFlowToFlash_Task();
   }
-
+  
   esp_task_wdt_feed();
   hwdt.kickDog();
 
@@ -1245,12 +1430,15 @@ void loop()
       ReadFlashFlowToPost_Task();  
   }
 
+  esp_task_wdt_feed();
+  hwdt.kickDog();
+
   // Server Chk
   if(millis()-serverMillisChk > SERVER_CHK_INT)
   {
     serverMillisChk = millis();
-    Serial.println("Server Checking...");
-    serverChkTask();
+    if(serverChkTask())
+      logPostTask();
   }
   
   // Interval Reset Chk

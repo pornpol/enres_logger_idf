@@ -28,7 +28,7 @@ bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MA
 float AnalogSensor::getSensor(uint8_t ch)
 {
   //return calSensor(_sensorType[ch], analogRead(_sensorPin[ch])); // Get only 1 value
-  return calSensor(_sensorType[ch], getAvgAdc(10, ch)); // Get avg 10-2 Value
+  return calSensor(_sensorType[ch], getAvgAdc(16, ch)); // Get avg 20-4 Value
 }
 
 float AnalogSensor::calSensor(uint8_t type, uint16_t value)
@@ -62,6 +62,11 @@ float AnalogSensor::calSensor(uint8_t type, uint16_t value)
       calValue = (calVolt/0.165)-4; 
       break;
 
+    case sensorTemp420 : // 6: Temp 4-20 0-50V
+    calVolt = getAdcVoltage(value);
+    calValue = ((calVolt-0.66)*50)/(3.3-0.66); 
+    break;
+
     default : 
       calValue = getAdcVoltage(value); 
       break;
@@ -90,9 +95,14 @@ float AnalogSensor::getAdcVoltage(uint16_t value)
 uint16_t AnalogSensor::getAvgAdc(uint8_t num, uint8_t ch)
 {
   uint16_t val;
-  uint16_t sumVal = 0;
+  uint32_t sumVal = 0;
   uint16_t minVal = 4095;
+  uint16_t minnVal = 4095;
+  uint16_t minnnVal = 4095;
   uint16_t maxVal = 0;
+  uint16_t maxxVal = 0;
+  uint16_t maxxxVal = 0;
+  uint16_t avgVal = 0;
 
   for(uint8_t i=0; i<num; i++)
   {
@@ -109,12 +119,63 @@ uint16_t AnalogSensor::getAvgAdc(uint8_t num, uint8_t ch)
       //Serial.printf("Raw Ext ADC CH%d : %d\r\n", ch, val);
     }
 
-    if(val < minVal) minVal = val;
-    if(val > maxVal) maxVal = val;
+    if(val < minVal)
+    {
+      if(val < minnVal)
+      {
+        minVal = minnVal;
+        if(val < minnnVal)
+        {
+          minnVal = minnnVal;
+          minnnVal = val;
+        }
+        else
+          minnVal = val;
+      }
+      else
+        minVal = val;
+    }
+
+    if(val > maxVal)
+    {
+      if(val > maxxVal)
+      {
+        maxVal = maxxVal;
+        if(val > maxxxVal)
+        {
+          maxxVal = maxxxVal;
+          maxxxVal = val;
+        }
+        else
+          maxxVal = val;
+      }
+      else
+        maxVal = val;
+    }
+
     sumVal += val;
+
+    // Re-read
+    // if((i > 6) && (maxVal - minVal) > 40)
+    // {
+    //   Serial.printf("Retry ADC CH%d Read Cnt %i : Min %d ,Max %d\r\n", ch, i, minVal, maxVal);
+    //   i = 0;
+    //   uint32_t sumVal = 0;
+    //   uint16_t minVal = 4095;
+    //   uint16_t minnVal = 4095;
+    //   uint16_t minnnVal = 4095;
+    //   uint16_t maxVal = 0;
+    //   uint16_t maxxVal = 0;
+    //   uint16_t maxxxVal = 0;
+    // }
+    delay(2);
   }
 
-  return (sumVal-minVal-maxVal)/(num-2);
+  avgVal = (sumVal-minnnVal-minnVal-minVal-maxVal-maxxVal-maxxxVal)/(num-6);
+  
+  //Serial.printf("Raw Ext ADC CH%d : Minnn %d, Minn %d, Max %d, Maxx %d, Avg %d, Min %d, Max %d\r\n", ch, minnnVal, minnVal, maxxVal, maxxxVal, avgVal, minVal, maxVal);
+
+  return avgVal;
 }
 
 float AnalogSensor::valueRange(float value, float minVal, float maxVal)

@@ -42,7 +42,17 @@ bool SPIFlashMeter::writeMeterData(uint32_t index, uint8_t *buff, uint32_t buff_
     }
   }
   //Erase page that write in first time
-  return _flash.writeByteArray(addr, buff, buff_size, true);
+  if ((index + (buff_size/_recordSize)) > _maxRecord)
+  {
+    _debug->println("Write Last and First Address");
+    bool res;
+    res = _flash.writeByteArray(addr, buff, (_maxRecord-index)*_recordSize, true);
+    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-index)*_recordSize), buff_size-(_maxRecord-index)*_recordSize, true);
+    return res;
+  }
+  else
+    return _flash.writeByteArray(addr, buff, buff_size, true);
+  //return _flash.writeByteArray(addr, buff, buff_size, true);
 }
 
 //buff 32 or 64s
@@ -69,7 +79,17 @@ bool SPIFlashMeter::writeSensorData(uint32_t index, uint8_t *buff, uint32_t buff
     }
   }
   //Erase page that write in first time
-  return _flash.writeByteArray(addr, buff, buff_size, true);
+  if ((index + (buff_size/_recordSize)) > _maxRecord)
+  {
+    _debug->println("Write Last and First Address");
+    bool res;
+    res = _flash.writeByteArray(addr, buff, (_maxRecord-index)*_recordSize, true);
+    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-index)*_recordSize), buff_size-(_maxRecord-index)*_recordSize, true);
+    return res;
+  }
+  else
+    return _flash.writeByteArray(addr, buff, buff_size, true);
+  //return _flash.writeByteArray(addr, buff, buff_size, true);
 }
 bool SPIFlashMeter::readSensorData(uint32_t index, uint8_t *buff, uint32_t buff_size)
 {
@@ -95,7 +115,17 @@ bool SPIFlashMeter::writeFlowData(uint32_t index, uint8_t *buff, uint32_t buff_s
     }
   }
   //Erase page that write in first time
-  return _flash.writeByteArray(addr, buff, buff_size, true);
+  if ((index + (buff_size/_recordSize)) > _maxRecord)
+  {
+    _debug->println("Write Last and First Address");
+    bool res;
+    res = _flash.writeByteArray(addr, buff, (_maxRecord-index)*_recordSize, true);
+    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-index)*_recordSize), buff_size-(_maxRecord-index)*_recordSize, true);
+    return res;
+  }
+  else
+    return _flash.writeByteArray(addr, buff, buff_size, true);
+  //return _flash.writeByteArray(addr, buff, buff_size, true);
 }
 
 //buff 32 or 64s
