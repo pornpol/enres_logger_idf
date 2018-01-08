@@ -5,6 +5,7 @@
 #include <SPIFlashMeter.h>
 #include <AnalogSensor.h>
 #include <HardwareWDT.h>
+#include <ENRES3G.h>
 
 #include <time.h>
 #include <WiFi.h>
@@ -21,6 +22,7 @@
 #define MAX485_DE_RE      27
 #define SD_CS             15
 #define LED_BUILTIN       2
+#define LED_3G            13
 #define HWDT_KD           12
 #define HWDT_EN           14
 //#define FLASH_CS          5
@@ -46,7 +48,7 @@
 
 #define SERVER_CHK_INT    ((5)*60000) // millisecond (5 Minute)
 
-#define RST_CHK_INT    ((7)*(86400000)) // millisecond (7 Day)
+#define RST_CHK_INT    ((1)*(86400000)) // millisecond (1 Day)
 
 //#define IOTCMD_SERVER     "128.199.176.159"
 #define IOTCMD_SERVER     "www.iotcmd.co"
@@ -81,6 +83,7 @@ DeviceStatus errlog;
 
 // Define HardwareSerial(2) for Modbus Communication
 HardwareSerial Serial2(2);
+HardwareSerial Serial1(1);
 
 ModbusMeter meter;
 SDConfig sd;
@@ -89,6 +92,7 @@ SPIFlashMeter flash;
 RTC_MCP7940 rtc;
 AnalogSensor sensor;
 HardwareWDT hwdt;
+ENRES3G enres3g;
 
 uint8_t wBuff[RECSIZE*MAXMETER];  // Max Buffer = Record Size * Max no. Meter
 uint8_t rBuff[RECSIZE*MAXMETER];
@@ -183,27 +187,6 @@ bool meterToFlash()
     index += 4;
     *(uint32_t*)&wBuff[index] = meter.md[i].mdt;  //[0, 4,294,967,295]
     index += 4;
-    
-    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].watt * 100);      //[0.00, 42,949,672.95]
-    // index += 4;
-    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].wattHour * 100);  //[0.00, 42,949,672.95]
-    // index += 4;
-    // *(int16_t*)&wBuff[index] = (int16_t)(meter.md[i].pf * 100);         //[-1.28,1.27]
-    // index += 2;
-    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].varh * 100);      //[0.00, 42,949,672.95]
-    // index += 4;
-    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i0 * 100);        //[0.00, 42,949,672.95]
-    // index += 4;
-    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i1 * 100);        //[0.00, 42,949,672.95]
-    // index += 4;
-    // *(uint32_t*)&wBuff[index] = (uint32_t)(meter.md[i].i2 * 100);        //[0.00, 42,949,672.95]
-    // index += 4;
-    // *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v0 * 10);        //[0.00, 6553.5]
-    // index += 2;
-    // *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v1 * 10);        //[0.00, 6553.5]
-    // index += 2;
-    // *(uint16_t*)&wBuff[index] = (uint16_t)(meter.md[i].v2 * 10);        //[0.00, 6553.5]
-    // index += 2;
  
     *(float*)&wBuff[index] = meter.md[i].watt;
     index += 4;
@@ -254,7 +237,7 @@ bool meterToFlash()
     errlog.e.spiflash = 1;
 
     fErrorCnt++;
-    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex) /*&& (fSecErrorCnt <= FLASH_SECTOR_ERROR_MAX)*/)
+    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex))
     {
       Serial.println("Move Flash Index to next sector!!!!");
       fErrorCnt = 0;
@@ -305,36 +288,6 @@ void flashMeterToPost(uint32_t num)
     
     playload = playload + "\"mdt\":\"" + String(tbuff) + "\",";
     index += 4;
-
-    // playload = playload + "\"w\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"wh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"pf\":" + String(((float)(*(int16_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 2;
-
-    // playload = playload + "\"varh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"i0\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"i1\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"i2\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"v0\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    // index += 2;
-
-    // playload = playload + "\"v1\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    // index += 2;
-
-    // playload = playload + "\"v2\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + "}]";
-    // index += 2;
 
     playload = playload + "\"w\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
@@ -444,36 +397,6 @@ void flashMeterToBatchPost(uint32_t num)
     
     playload = playload + "\"mdt\":\"" + String(tbuff) + "\",";
     index += 4;
-
-    // playload = playload + "\"w\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"wh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"pf\":" + String(((float)(*(int16_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 2;
-
-    // playload = playload + "\"varh\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"i0\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"i1\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"i2\":" + String(((float)(*(uint32_t*)&rBuff[index]))/100, 2) + ",";
-    // index += 4;
-
-    // playload = playload + "\"v0\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    // index += 2;
-
-    // playload = playload + "\"v1\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + ",";
-    // index += 2;
-
-    // playload = playload + "\"v2\":" + String(((float)(*(uint16_t*)&rBuff[index]))/10, 1) + "}";
-    // index += 2;
 
     playload = playload + "\"w\":" + String(((*(float*)&rBuff[index])), 4) + ",";
     index += 4;
@@ -678,7 +601,7 @@ bool SensorToFlash()
     errlog.e.spiflash = 1;
     
     fErrorCnt++;
-    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex) /*&& (fSecErrorCnt <= FLASH_SECTOR_ERROR_MAX)*/)
+    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex))
     {
       Serial.println("Move Flash Index to next sector!!!!");
       fErrorCnt = 0;
@@ -795,6 +718,10 @@ void flashSensorToBatchPost(uint32_t num)
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
       errlog.e.server = 1;
+
+      // NTF
+      WiFi.reconnect();
+
       return;
     } else
     {
@@ -919,7 +846,7 @@ bool flowToFlash()
     errlog.e.spiflash = 1;
     
     fErrorCnt++;
-    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex) /*&& (fSecErrorCnt <= FLASH_SECTOR_ERROR_MAX)*/)
+    if((fErrorCnt >= FLASH_ERROR_MAX) && (wIndex == rIndex))
     {
       Serial.println("Move Flash Index to next sector!!!!");
       fErrorCnt = 0;
@@ -1249,6 +1176,9 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
+  pinMode(LED_3G, OUTPUT);
+  digitalWrite(LED_3G, HIGH);
+
   // Init debug port
   Serial.begin(115200, SERIAL_8N1);
 
@@ -1273,31 +1203,42 @@ void setup()
 
   UNDERLINE;
 
-  // Init Modbus Meter Comunication
-  //Serial2.begin(9600, SERIAL_8E1);
-  //pinMode(16, INPUT_PULLUP);
-
-  const uart_port_t uart_num = UART_NUM_2;
-  uart_config_t uart_config = {
+  // Init Modbus Meter Communication
+  const uart_port_t uart_num_2 = UART_NUM_2;
+  uart_config_t uart_config_2 = {
     .baud_rate = 9600,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_EVEN,
-    //.parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
   };
   if(sd.cfgG.type == 1)
-    uart_config.parity = UART_PARITY_EVEN;
+    uart_config_2.parity = UART_PARITY_EVEN;
   else if(sd.cfgG.type == 3)
-    uart_config.parity = UART_PARITY_DISABLE;
+    uart_config_2.parity = UART_PARITY_DISABLE;
   
-  uart_param_config(uart_num, &uart_config);
-  uart_set_pin(uart_num, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-  uart_driver_install(uart_num, BUF_SIZE * 2, 0, 0, NULL, 0);
+  uart_param_config(uart_num_2, &uart_config_2);
+  uart_set_pin(uart_num_2, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_driver_install(uart_num_2, BUF_SIZE * 2, 0, 0, NULL, 0);
   
+  // Init 3G Module Communication
+  //Serial1.begin(9600, SERIAL_8N1, 26 /*rx*/, 25 /*tx*/);
+  const uart_port_t uart_num_1 = UART_NUM_1;
+  uart_config_t uart_config_1 = {
+    .baud_rate = 9600,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .rx_flow_ctrl_thresh = 122,
+  };
+  
+  uart_param_config(uart_num_1, &uart_config_1);
+  uart_set_pin(uart_num_1, 25, 26, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_driver_install(uart_num_1, BUF_SIZE * 2, 0, 0, NULL, 0);
+
   uart_disable_rx_intr(UART_NUM_0);
-  //uart_enable_rx_intr(UART_NUM_0);
 
   meter.begin(Serial2);
   meter.preTransmission(preTransmission);
@@ -1332,6 +1273,8 @@ void setup()
     getRIndex();
   }
 
+  //enres3g.begin(Serial1, Serial, "internet", "True", "true");
+
   // Connect to Wifi
   hwdt.disable();
   wifiConnect();
@@ -1363,7 +1306,7 @@ void setup()
 }
 
 void loop()
-{ 
+{
   esp_task_wdt_feed();
   hwdt.kickDog();
 

@@ -1,6 +1,6 @@
 #include "TEE_UC20.h"
 
-int START_PIN = 4;
+int START_PIN = 13;
 UC20 gsm;
 unsigned long previousMillis_timeout = 0; 
 
@@ -11,24 +11,12 @@ UC20::UC20()
 {
 	Event_debug =  event_null;
 }
-// void UC20:: begin(SoftwareSerial *serial,long baud)
-// {
-// 	serial->begin(baud);
-// 	_Serial = serial;	
-// }
 
-void UC20:: begin(HardwareSerial *serial,long baud)
+void UC20:: begin(Stream *serial)
 {
-	// serial->begin(baud);
 	_Serial = serial;
 }
-// #if ATLSOFTSERIAL 
-// void UC20:: begin(AltSoftSerial *serial,long baud)
-// {
-// 	serial->begin(baud);
-// 	_Serial = serial;
-// }
-// #endif
+
 void UC20:: debug (String data)
 {
 	(*Event_debug)(data);
@@ -50,11 +38,7 @@ bool UC20::PowerOn()
 	delay(1000);
 	digitalWrite(START_PIN, LOW);
 	delay(1000);
-				
-	
-	
-	
-	
+					
 	/*
 	while(!_Serial->available())
 	{
@@ -362,10 +346,10 @@ size_t UC20:: println(String data,int type)
 	//return _Serial->println(data,type);
 }
 
-int UC20:: peek()
-{
-     return _Serial->peek();
-}
+// int UC20:: peek()
+// {
+//      return _Serial->peek();
+// }
 size_t UC20:: write(uint8_t byte)
 {
      return _Serial->write(byte);
@@ -378,7 +362,7 @@ int UC20:: available()
 {
      return _Serial->available();
 }
-void UC20:: flush()
-{
-     _Serial->flush();
-}
+// void UC20:: flush()
+// {
+//      _Serial->flush();
+// }

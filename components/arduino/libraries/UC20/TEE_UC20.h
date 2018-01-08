@@ -21,7 +21,7 @@ class UC20
 public:
 	UC20();
 	// void begin(SoftwareSerial *serial,long baud);
-	void begin(HardwareSerial *serial,long baud);
+	void begin(Stream *serial);
 	// #if ATLSOFTSERIAL
 	// void begin(AltSoftSerial *serial,long baud);
 	// #endif
@@ -44,11 +44,11 @@ public:
 	void start_time_out();
 	bool time_out(long timeout_interval);
 
-	int  peek();
+	// int  peek();
 	virtual size_t write(uint8_t byte);
 	int read();
     int available();
-    virtual void flush();
+    // virtual void flush();
 	void print(unsigned char data,int type);
 	void print(int data,int type);
 	void print(unsigned int data,int type);
