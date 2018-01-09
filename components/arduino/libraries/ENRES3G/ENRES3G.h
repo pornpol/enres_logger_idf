@@ -18,6 +18,7 @@ class ENRES3G
     ENRES3G();
 
     void begin(Stream &serial, Stream &debug, String, String, String);
+    uint16_t post(String, String);
     
   private:
     Stream* _serial;
@@ -29,6 +30,9 @@ class ENRES3G
     INTERNET net;
     UC_FILE file;
     HTTP http;
+
+    void read_file(String pattern,String file_name);
+
 };
 
 #endif

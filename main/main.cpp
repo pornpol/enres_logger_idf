@@ -108,6 +108,8 @@ DateTime now;
 
 WiFiMulti wifiMulti;
 
+uint8_t connType = 1;
+
 bool tAdj = false;
 
 uint8_t fErrorCnt = 0;
@@ -352,6 +354,7 @@ void flashMeterToPost(uint32_t num)
     }
     http.end();
     UNDERLINE;
+    
   }
 
   rIndex += num;
@@ -707,30 +710,47 @@ void flashSensorToBatchPost(uint32_t num)
     //Serial.print("PL: ");
     //Serial.println(playload);
   
-    HTTPClient http;
-  
-    http.begin("http://" + host + path);
-    http.addHeader("Content-Type", "application/json");
-  
-    hwdt.disable();
-    uint16_t httpCode = http.POST(playload);
-    hwdt.enable();
-    if (httpCode != 200) {
-      Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
-      errlog.e.server = 1;
-
-      // NTF
-      WiFi.reconnect();
-
-      return;
-    } else
+    uint16_t httpCode;
+    if(connType == 0)
     {
-      Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
-      errlog.e.server = 0;
-    }
-    http.end();
-    UNDERLINE;
+      HTTPClient http;
     
+      http.begin("http://" + host + path);
+      http.addHeader("Content-Type", "application/json");
+    
+      hwdt.disable();
+      httpCode = http.POST(playload);
+      hwdt.enable();
+      if (httpCode != 200) {
+        Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+        errlog.e.server = 1;
+
+        // NTF
+        WiFi.reconnect();
+
+        return;
+      } else
+      {
+        Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+        errlog.e.server = 0;
+      }
+      http.end();
+      UNDERLINE;
+    } else if(connType == 1)
+    {
+      hwdt.disable();
+      httpCode = enres3g.post("http://" + host + path, playload);
+      hwdt.enable();
+
+      if(httpCode != 200)
+      {
+        Serial.println("POST Fail");
+        return;
+      }else{
+        Serial.println("POST Seccess");
+      }
+        
+    }
     rIndex += num;
     // Save to RTC
     setRIndex();
@@ -1176,8 +1196,8 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  pinMode(LED_3G, OUTPUT);
-  digitalWrite(LED_3G, HIGH);
+  //pinMode(LED_3G, OUTPUT);
+  //digitalWrite(LED_3G, HIGH);
 
   // Init debug port
   Serial.begin(115200, SERIAL_8N1);
@@ -1223,20 +1243,20 @@ void setup()
   uart_driver_install(uart_num_2, BUF_SIZE * 2, 0, 0, NULL, 0);
   
   // Init 3G Module Communication
-  //Serial1.begin(9600, SERIAL_8N1, 26 /*rx*/, 25 /*tx*/);
-  const uart_port_t uart_num_1 = UART_NUM_1;
-  uart_config_t uart_config_1 = {
-    .baud_rate = 9600,
-    .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_1,
-    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    .rx_flow_ctrl_thresh = 122,
-  };
+  Serial1.begin(9600, SERIAL_8N1, 26 /*rx*/, 25 /*tx*/);
+  // const uart_port_t uart_num_1 = UART_NUM_1;
+  // uart_config_t uart_config_1 = {
+  //   .baud_rate = 9600,
+  //   .data_bits = UART_DATA_8_BITS,
+  //   .parity = UART_PARITY_DISABLE,
+  //   .stop_bits = UART_STOP_BITS_1,
+  //   .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+  //   .rx_flow_ctrl_thresh = 122,
+  // };
   
-  uart_param_config(uart_num_1, &uart_config_1);
-  uart_set_pin(uart_num_1, 25, 26, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-  uart_driver_install(uart_num_1, BUF_SIZE * 2, 0, 0, NULL, 0);
+  // uart_param_config(uart_num_1, &uart_config_1);
+  // uart_set_pin(uart_num_1, 25, 26, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  // uart_driver_install(uart_num_1, BUF_SIZE * 2, 0, 0, NULL, 0);
 
   uart_disable_rx_intr(UART_NUM_0);
 
@@ -1273,7 +1293,9 @@ void setup()
     getRIndex();
   }
 
-  //enres3g.begin(Serial1, Serial, "internet", "True", "true");
+  hwdt.disable();
+  enres3g.begin(Serial1, Serial, "internet", "True", "true");
+  hwdt.enable();
 
   // Connect to Wifi
   hwdt.disable();
