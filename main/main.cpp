@@ -346,6 +346,10 @@ void flashMeterToPost(uint32_t num)
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
       errlog.e.server = 1;
+
+      // NTF
+      WiFi.reconnect();
+
       return;
     } else
     {
@@ -462,6 +466,10 @@ void flashMeterToBatchPost(uint32_t num)
   if (httpCode != 200) {
     Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
     errlog.e.server = 1;
+
+    // NTF
+    WiFi.reconnect();
+
     return;
   } else
   {
@@ -711,8 +719,8 @@ void flashSensorToBatchPost(uint32_t num)
     //Serial.println(playload);
   
     uint16_t httpCode;
-    if(connType == 0)
-    {
+    //if(connType == 0)
+    //{
       HTTPClient http;
     
       http.begin("http://" + host + path);
@@ -736,21 +744,20 @@ void flashSensorToBatchPost(uint32_t num)
       }
       http.end();
       UNDERLINE;
-    } else if(connType == 1)
-    {
-      hwdt.disable();
-      httpCode = enres3g.post("http://" + host + path, playload);
-      hwdt.enable();
+    // } else if(connType == 1)
+    // {
+    //   hwdt.disable();
+    //   httpCode = enres3g.post("http://" + host + path, playload);
+    //   hwdt.enable();
+    //   if(httpCode != 200)
+    //   {
+    //     Serial.println("POST Fail");
+    //     return;
+    //   }else{
+    //     Serial.println("POST Seccess");
+    //   }
+    // }
 
-      if(httpCode != 200)
-      {
-        Serial.println("POST Fail");
-        return;
-      }else{
-        Serial.println("POST Seccess");
-      }
-        
-    }
     rIndex += num;
     // Save to RTC
     setRIndex();
@@ -982,6 +989,10 @@ void flashFlowToBatchPost(uint32_t num)
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
       errlog.e.server = 1;
+
+      // NTF
+      WiFi.reconnect();
+      
       return;
     } else
     {
@@ -1196,8 +1207,8 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  //pinMode(LED_3G, OUTPUT);
-  //digitalWrite(LED_3G, HIGH);
+  pinMode(LED_3G, OUTPUT);
+  digitalWrite(LED_3G, HIGH);
 
   // Init debug port
   Serial.begin(115200, SERIAL_8N1);
@@ -1293,9 +1304,9 @@ void setup()
     getRIndex();
   }
 
-  hwdt.disable();
-  enres3g.begin(Serial1, Serial, "internet", "True", "true");
-  hwdt.enable();
+  // hwdt.disable();
+  // enres3g.begin(Serial1, Serial, "internet", "True", "true");
+  // hwdt.enable();
 
   // Connect to Wifi
   hwdt.disable();
