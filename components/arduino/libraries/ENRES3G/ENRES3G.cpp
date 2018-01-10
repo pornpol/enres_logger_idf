@@ -16,8 +16,9 @@ void ENRES3G::begin(Stream &serial, Stream &debug, String apn, String user, Stri
   _pass = pass;
 
   //Start Connection
-  Serial.println(F("UC20"));
+  _debug->println(F("UC20"));
   gsm.begin(_serial);
+  // gsm.Event_debug = debug;
   
   gsm.SetPowerKeyPin(13);
   
@@ -40,16 +41,18 @@ void ENRES3G::begin(Stream &serial, Stream &debug, String apn, String user, Stri
 
   _debug->println(F("Show My IP"));
   _debug->println(net.GetIP());
-
-  post("http://staging.enres.co/api/data_sensor/1001?access_token=8I3LaxaL8Yx5FASA4UpVh5I2swRoEO",
-        "[{\"sdt\":\"201801081536\",\"rt\":24.39,\"hm\":50}]");
 }
 
 uint16_t ENRES3G::post(String url, String payload)
 {
-  Serial.println(F("Start HTTP"));
+  _debug->println(F("Start HTTP"));
   http.begin(1);
-  Serial.println(F("Send HTTP POST"));
+  _debug->println(F("Send HTTP POST"));
   http.url(url);
   return(http.post(payload));
 }
+
+// void ENRES3G::debug(String data)
+// {
+//   _debug->println(data);
+// }

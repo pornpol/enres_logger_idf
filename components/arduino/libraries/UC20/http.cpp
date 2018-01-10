@@ -71,15 +71,16 @@ int HTTP::post()
 }
 int HTTP::post(String data)
 {
+	uint16_t timeout = 10000;
 	String req;
 	gsm.print("AT+QHTTPPOST=");
 	gsm.print(data.length(),DEC);
 	gsm.println(",80,80");
 	//return(data.length(),DEC);
-	//gsm.start_time_out();
+	gsm.start_time_out();//////////
 	while(!gsm.available())
 	{
-		//if(time_out(5000)) reture (-1);
+		if(gsm.time_out(timeout)) return (-1);////////////
 	}
 	gsm.start_time_out();
 	unsigned char flag=1;
@@ -93,11 +94,15 @@ int HTTP::post(String data)
 		if(req.indexOf(F("ERROR")) != -1)
 		{
 			//return(-1);
-		}		
+		}
+		if(gsm.time_out(timeout)) return (-1); //////////		
 	}		
 	gsm.print(data);
+	gsm.start_time_out(); ////////////
 	while(!gsm.available())
-	{}
+	{
+		if(gsm.time_out(timeout)) return (-1);////////////
+	}
 	gsm.start_time_out();
 	while(1)
 	{
@@ -110,9 +115,9 @@ int HTTP::post(String data)
 		if(req.indexOf(F("ERROR")) != -1)
 		{
 			return(-1);
-		}		
+		}
+		if(gsm.time_out(timeout)) return (-1);		////////////
 	}		
-	
 }
 
 void HTTP:: ReadData()

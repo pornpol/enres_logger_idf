@@ -719,8 +719,8 @@ void flashSensorToBatchPost(uint32_t num)
     //Serial.println(playload);
   
     uint16_t httpCode;
-    //if(connType == 0)
-    //{
+    if(connType == 0)
+    {
       HTTPClient http;
     
       http.begin("http://" + host + path);
@@ -744,19 +744,19 @@ void flashSensorToBatchPost(uint32_t num)
       }
       http.end();
       UNDERLINE;
-    // } else if(connType == 1)
-    // {
-    //   hwdt.disable();
-    //   httpCode = enres3g.post("http://" + host + path, playload);
-    //   hwdt.enable();
-    //   if(httpCode != 200)
-    //   {
-    //     Serial.println("POST Fail");
-    //     return;
-    //   }else{
-    //     Serial.println("POST Seccess");
-    //   }
-    // }
+    } else if(connType == 1)
+    {
+      hwdt.disable();
+      httpCode = enres3g.post("http://" + host + path, playload);
+      hwdt.enable();
+      if(httpCode != 200)
+      {
+        Serial.println("POST Fail");
+        return;
+      }else{
+        Serial.println("POST Seccess");
+      }
+    }
 
     rIndex += num;
     // Save to RTC
@@ -1255,19 +1255,6 @@ void setup()
   
   // Init 3G Module Communication
   Serial1.begin(9600, SERIAL_8N1, 26 /*rx*/, 25 /*tx*/);
-  // const uart_port_t uart_num_1 = UART_NUM_1;
-  // uart_config_t uart_config_1 = {
-  //   .baud_rate = 9600,
-  //   .data_bits = UART_DATA_8_BITS,
-  //   .parity = UART_PARITY_DISABLE,
-  //   .stop_bits = UART_STOP_BITS_1,
-  //   .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-  //   .rx_flow_ctrl_thresh = 122,
-  // };
-  
-  // uart_param_config(uart_num_1, &uart_config_1);
-  // uart_set_pin(uart_num_1, 25, 26, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-  // uart_driver_install(uart_num_1, BUF_SIZE * 2, 0, 0, NULL, 0);
 
   uart_disable_rx_intr(UART_NUM_0);
 
@@ -1304,9 +1291,10 @@ void setup()
     getRIndex();
   }
 
-  // hwdt.disable();
-  // enres3g.begin(Serial1, Serial, "internet", "True", "true");
-  // hwdt.enable();
+  // Connect to 3G
+  hwdt.disable();
+  enres3g.begin(Serial1, Serial, "internet", "True", "true");
+  hwdt.enable();
 
   // Connect to Wifi
   hwdt.disable();

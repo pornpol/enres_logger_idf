@@ -31,7 +31,8 @@ class ENRES3G
     UC_FILE file;
     HTTP http;
 
-    void read_file(String pattern,String file_name);
+    //void read_file(String pattern,String file_name);
+    void debug(String data);
 
 };
 
