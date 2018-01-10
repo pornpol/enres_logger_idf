@@ -46,7 +46,7 @@
 
 #define SRAM_ADDRESS      MCP7940_NVRAM
 
-#define SERVER_CHK_INT    ((5)*60000) // millisecond (5 Minute)
+#define SERVER_CHK_INT    ((15)*60000) // millisecond (5 Minute)
 
 #define RST_CHK_INT    ((1)*(86400000)) // millisecond (1 Day)
 
