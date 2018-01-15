@@ -5,7 +5,7 @@
 #include <SPIFlashMeter.h>
 #include <AnalogSensor.h>
 #include <HardwareWDT.h>
-#include <ENRES3G.h>
+// #include <ENRES3G.h>
 
 #include <time.h>
 #include <WiFi.h>
@@ -46,9 +46,9 @@
 
 #define SRAM_ADDRESS      MCP7940_NVRAM
 
-#define SERVER_CHK_INT    ((15)*60000) // millisecond (5 Minute)
+#define SERVER_CHK_INT    ((15)*60000) // millisecond (15 Minute)
 
-#define RST_CHK_INT    ((1)*(86400000)) // millisecond (1 Day)
+#define RST_CHK_INT    ((1)*(24)*(3600000)) // millisecond (1 Day)
 
 //#define IOTCMD_SERVER     "128.199.176.159"
 #define IOTCMD_SERVER     "www.iotcmd.co"
@@ -83,7 +83,7 @@ DeviceStatus errlog;
 
 // Define HardwareSerial(2) for Modbus Communication
 HardwareSerial Serial2(2);
-HardwareSerial Serial1(1);
+// HardwareSerial Serial1(1);
 
 ModbusMeter meter;
 SDConfig sd;
@@ -92,7 +92,7 @@ SPIFlashMeter flash;
 RTC_MCP7940 rtc;
 AnalogSensor sensor;
 HardwareWDT hwdt;
-ENRES3G enres3g;
+// ENRES3G enres3g;
 
 uint8_t wBuff[RECSIZE*MAXMETER];  // Max Buffer = Record Size * Max no. Meter
 uint8_t rBuff[RECSIZE*MAXMETER];
@@ -719,8 +719,8 @@ void flashSensorToBatchPost(uint32_t num)
     //Serial.println(playload);
   
     uint16_t httpCode;
-    if(connType == 0)
-    {
+    // if(connType == 0)
+    // {
       HTTPClient http;
     
       http.begin("http://" + host + path);
@@ -744,19 +744,19 @@ void flashSensorToBatchPost(uint32_t num)
       }
       http.end();
       UNDERLINE;
-    } else if(connType == 1)
-    {
-      hwdt.disable();
-      httpCode = enres3g.post("http://" + host + path, playload);
-      hwdt.enable();
-      if(httpCode != 200)
-      {
-        Serial.println("POST Fail");
-        return;
-      }else{
-        Serial.println("POST Seccess");
-      }
-    }
+    // } else if(connType == 1)
+    // {
+    //   hwdt.disable();
+    //   httpCode = enres3g.post("http://" + host + path, playload);
+    //   hwdt.enable();
+    //   if(httpCode != 200)
+    //   {
+    //     Serial.println("POST Fail");
+    //     return;
+    //   }else{
+    //     Serial.println("POST Seccess");
+    //   }
+    // }
 
     rIndex += num;
     // Save to RTC
@@ -1254,7 +1254,7 @@ void setup()
   uart_driver_install(uart_num_2, BUF_SIZE * 2, 0, 0, NULL, 0);
   
   // Init 3G Module Communication
-  Serial1.begin(9600, SERIAL_8N1, 26 /*rx*/, 25 /*tx*/);
+  // Serial1.begin(9600, SERIAL_8N1, 26 /*rx*/, 25 /*tx*/);
 
   uart_disable_rx_intr(UART_NUM_0);
 
@@ -1292,9 +1292,9 @@ void setup()
   }
 
   // Connect to 3G
-  hwdt.disable();
-  enres3g.begin(Serial1, Serial, "internet", "True", "true");
-  hwdt.enable();
+  // hwdt.disable();
+  // enres3g.begin(Serial1, Serial, "internet", "True", "true");
+  // hwdt.enable();
 
   // Connect to Wifi
   hwdt.disable();
