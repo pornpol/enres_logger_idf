@@ -55,7 +55,8 @@ class SDConfig
       uint32_t xid[2];
       uint8_t pin[8];
       uint8_t type[8];
-      float adjust[8][8];
+      float range[8][2];
+      float adjust[8][2];
     } configSensor;
     configSensor cfgS;
 

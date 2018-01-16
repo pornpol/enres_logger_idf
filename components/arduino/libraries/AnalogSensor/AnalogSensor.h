@@ -15,7 +15,7 @@ class AnalogSensor
 {
   public:
     AnalogSensor();
-    bool begin(uint8_t[ANALOG_CH_MAX], uint8_t[ANALOG_CH_MAX], uint8_t); // ch & type
+    bool begin(uint8_t[ANALOG_CH_MAX], uint8_t[ANALOG_CH_MAX], uint8_t, float[ANALOG_CH_MAX][2]); // ch & type
     float getSensor(uint8_t);
 
     static const uint8_t sensorNone       = 0;
@@ -23,8 +23,9 @@ class AnalogSensor
     static const uint8_t sensorColdTempT3 = 2;
     static const uint8_t sensorHotTempT2  = 3;
     static const uint8_t sensorHotTempT3  = 4;
-    static const uint8_t sensorPress      = 5;
-    static const uint8_t sensorTemp420    = 6;
+    static const uint8_t generic420       = 5;
+    //static const uint8_t sensorPress      = 5;
+    //static const uint8_t sensorTemp420    = 6;
 
   private:
     MCP3208 adc = MCP3208(3300,4);
@@ -32,6 +33,7 @@ class AnalogSensor
     uint8_t _sensorPin[ANALOG_CH_MAX];
     uint8_t _sensorType[ANALOG_CH_MAX];
     uint8_t _adcExt;
+    float _sensorRange[ANALOG_CH_MAX][2];
 
     // 0 - 3.3 Volt = 0.05 volt/step
     static const uint8_t NUM_ADC_TABLE = 67;
@@ -43,7 +45,7 @@ class AnalogSensor
                                 2899,2982,3043,3127,3183,3306,3408,3479,3607,3703,
                                 3829,3919,4095,4095,4095,4095,4095};
 
-    float calSensor(uint8_t, uint16_t); //type, value
+    float calSensor(uint8_t, uint16_t, float[2]); //type, value
     float getAdcVoltage(uint16_t);
     uint16_t getAvgAdc(uint8_t num, uint8_t ch);
     float valueRange(float value, float minVal, float maxVal);

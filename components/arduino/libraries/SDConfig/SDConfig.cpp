@@ -105,6 +105,7 @@ bool SDConfig::phaseConfig(String config)
     cfgS.type[i] = root["sensor"]["type"][i];
     for(uint8_t j=0; j<2; j++)
     {
+      cfgS.range[i][j] = root["sensor"]["range"][i][j];
       cfgS.adjust[i][j] = root["sensor"]["adjust"][i][j];
     }
   }

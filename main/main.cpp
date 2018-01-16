@@ -663,7 +663,8 @@ void flashSensorToBatchPost(uint32_t num)
       uint8_t cnt = 0;
       for(uint8_t j=0; j<2; j++)
       {
-        if(*(uint8_t*)&rBuff[index] == 1)
+        uint8_t used_type = *(uint8_t*)&rBuff[index];
+        if(used_type >= 1) // Change to >= 1
         {
           if(cnt > 0) playload = playload + ",";
           cnt++;
@@ -681,17 +682,35 @@ void flashSensorToBatchPost(uint32_t num)
           playload = playload + "\"sdt\":\"" + String(tbuff) + "\",";
           index += 4;
       
-          playload = playload + "\"tm1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
-          index += 4;
-      
-          playload = playload + "\"tm2\":" + String(((*(float*)&rBuff[index])), 4) + ",";
-          index += 4;
-      
-          playload = playload + "\"ps1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
-          index += 4;
-      
-          playload = playload + "\"ps2\":" + String(((*(float*)&rBuff[index])), 4) + "}";
-          index += 4;
+          if(used_type == 1) // Pressure Cooling
+          {
+            playload = playload + "\"tm1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+            index += 4;
+        
+            playload = playload + "\"tm2\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+            index += 4;
+        
+            playload = playload + "\"ps1\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+            index += 4;
+        
+            playload = playload + "\"ps2\":" + String(((*(float*)&rBuff[index])), 4) + "}";
+            index += 4;
+          }else if(used_type == 2) // Temp Humid
+          {
+            playload = playload + "\"rt\":" + String(((*(float*)&rBuff[index])), 4) + ",";
+            index += 4;
+        
+            playload = playload + "\"hm\":" + String(((*(float*)&rBuff[index])), 4) + "}";
+            index += 12;
+          }else if(used_type == 3) // CO2
+          {
+            playload = playload + "\"co2\":" + String(((*(float*)&rBuff[index])), 4) + "}";
+            index += 16;
+          }else if(used_type == 4) // Pressure
+          {
+            playload = playload + "\"ps\":" + String(((*(float*)&rBuff[index])), 4) + "}";
+            index += 16;
+          }
         }
         else
         {
@@ -715,8 +734,8 @@ void flashSensorToBatchPost(uint32_t num)
     Serial.print("PATH: ");
     Serial.println(path);
   
-    //Serial.print("PL: ");
-    //Serial.println(playload);
+    Serial.print("PL: ");
+    Serial.println(playload);
   
     uint16_t httpCode;
     // if(connType == 0)
@@ -832,10 +851,15 @@ bool flowToFlash()
   index += 4;
   *(float*)&wBuff[index] = flow.fd.ins_heat_flow;
   index += 4;
+
+  // 
+  // *(float*)&wBuff[index] = sensor.getSensor(0) * sd.cfgS.adjust[0][0] + sd.cfgS.adjust[0][1];
   *(float*)&wBuff[index] = flow.fd.tm1;
   index += 4;
+  // *(float*)&wBuff[index] = sensor.getSensor(1) * sd.cfgS.adjust[1][0] + sd.cfgS.adjust[1][1];
   *(float*)&wBuff[index] = flow.fd.tm2;
   index += 4;
+
   *(float*)&wBuff[index] = flow.fd.signal_ratio;
   index += 4;
   *(float*)&wBuff[index] = flow.fd.reynolds;
@@ -1267,7 +1291,7 @@ void setup()
   flow.postTransmission(postTransmission);
 
   // Init Sensor
-  sensor.begin(sd.cfgS.pin, sd.cfgS.type, sd.cfgG.adcExt);
+  sensor.begin(sd.cfgS.pin, sd.cfgS.type, sd.cfgG.adcExt, sd.cfgS.range);
 
   // Init Rtc
   // Check RTC RAM and update wIndex & rIndex

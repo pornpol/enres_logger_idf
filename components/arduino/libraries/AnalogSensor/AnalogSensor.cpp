@@ -8,7 +8,7 @@ AnalogSensor::AnalogSensor()
   digitalWrite(ADC_SPI_CS, HIGH);
 }
 
-bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MAX], uint8_t adcExt)
+bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MAX], uint8_t adcExt, float range[ANALOG_CH_MAX][2])
 {
   // SPISettings settings(1600000, MSBFIRST, SPI_MODE0);
   // SPI.begin();
@@ -18,6 +18,10 @@ bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MA
   {
     _sensorPin[i] = pins[i];
     _sensorType[i] = types[i];
+    for(uint8_t j=0; j<2; j++)
+    {
+      _sensorRange[i][j] = range[i][j];
+    }
   }
 
   _adcExt = adcExt;
@@ -28,10 +32,10 @@ bool AnalogSensor::begin(uint8_t pins[ANALOG_CH_MAX], uint8_t types[ANALOG_CH_MA
 float AnalogSensor::getSensor(uint8_t ch)
 {
   //return calSensor(_sensorType[ch], analogRead(_sensorPin[ch])); // Get only 1 value
-  return calSensor(_sensorType[ch], getAvgAdc(16, ch)); // Get avg 20-4 Value
+  return calSensor(_sensorType[ch], getAvgAdc(16, ch), _sensorRange[ch]); // Get avg 20-4 Value
 }
 
-float AnalogSensor::calSensor(uint8_t type, uint16_t value)
+float AnalogSensor::calSensor(uint8_t type, uint16_t value, float range[2])
 {
   float calValue;
   float calVolt;
@@ -51,21 +55,38 @@ float AnalogSensor::calSensor(uint8_t type, uint16_t value)
       calValue = valueRange(((-20.73)*log(calRes))+215.43, -5, 24);
       break;
 
+    case sensorColdTempT3 : // 2: Cold Water Temp Type3
+      calVolt = getAdcVoltage(value);
+      calRes = ((20*1000*5)/calVolt)-(20*1000);
+      calValue = valueRange(((-22.86)*log(calRes))+235.06, -5, 24);
+      break;
+
+    case sensorHotTempT2 : // 3: Hot Water Temp Type2
+      calVolt = getAdcVoltage(value);
+      calRes = ((5.6*1000*5)/calVolt)-(5.6*1000);
+      calValue = valueRange(((-24.23)*log(calRes))+248.33, 15, 45);
+      break;
+
     case sensorHotTempT3 : // 4: Hot Water Temp Type3
       calVolt = getAdcVoltage(value);
       calRes = ((5.6*1000*5)/calVolt)-(5.6*1000);
       calValue = valueRange(((-25.45)*log(calRes))+259.54, 15, 45);
       break;
 
-    case sensorPress : // 5: Pressure
+    case generic420 : // 5: 4-20 mA
       calVolt = getAdcVoltage(value);
-      calValue = (calVolt/0.165)-4; 
+      calValue = ((calVolt-0.66)*range[1])/(3.3-0.66) - range[0];
       break;
 
-    case sensorTemp420 : // 6: Temp 4-20 0-50V
-    calVolt = getAdcVoltage(value);
-    calValue = ((calVolt-0.66)*50)/(3.3-0.66); 
-    break;
+    // case sensorPress : // 5: Pressure
+    //   calVolt = getAdcVoltage(value);
+    //   calValue = (calVolt/0.165)-4; 
+    //   break;
+
+    // case sensorTemp420 : // 6: Temp 4-20 0-50V
+    // calVolt = getAdcVoltage(value);
+    // calValue = ((calVolt-0.66)*50)/(3.3-0.66); 
+    // break;
 
     default : 
       calValue = getAdcVoltage(value); 
