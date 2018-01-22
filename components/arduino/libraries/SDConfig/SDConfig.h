@@ -36,6 +36,8 @@ class SDConfig
       String batch_path;
       String path_sensor;
       String batch_path_sensor;
+      uint8_t log_use;
+      String log_server;
     } configGlobal;
     configGlobal cfgG;
 

@@ -25,6 +25,7 @@
 #define LED_3G            13
 #define HWDT_KD           12
 #define HWDT_EN           14
+#define PWR_CHK           35
 //#define FLASH_CS          5
 //#define FLASH_SIZE        128  //Mb
 #define GMT               7
@@ -49,9 +50,6 @@
 #define SERVER_CHK_INT    ((15)*60000) // millisecond (15 Minute)
 
 #define RST_CHK_INT    ((1)*(24)*(3600000)) // millisecond (1 Day)
-
-//#define IOTCMD_SERVER     "128.199.176.159"
-#define IOTCMD_SERVER     "www.iotcmd.co"
 
 typedef union
 {
@@ -734,8 +732,8 @@ void flashSensorToBatchPost(uint32_t num)
     Serial.print("PATH: ");
     Serial.println(path);
   
-    Serial.print("PL: ");
-    Serial.println(playload);
+    // Serial.print("PL: ");
+    // Serial.println(playload);
   
     uint16_t httpCode;
     // if(connType == 0)
@@ -1110,8 +1108,7 @@ bool serverChkTask()
     hwdt.enable();
     HTTPClient http;
     
-    http.begin("http://"IOTCMD_SERVER"/api/enres/nreq/" + espChipID_str);
-    //http.addHeader("Content-Type", "application/json");
+    http.begin("http://" + sd.cfgG.log_server + "/nreq/" + espChipID_str);
     
     hwdt.disable();
     uint16_t httpCode = http.GET();
@@ -1158,6 +1155,8 @@ bool serverChkTask()
 
 bool logPostTask()
 {
+  errlog.e.power = ~(digitalRead(PWR_CHK));
+
   Serial.println("Log Posting...");
   hwdt.disable();
   if(wifiMulti.run() == WL_CONNECTED)
@@ -1173,18 +1172,12 @@ bool logPostTask()
     playload = playload + "\"msg\":\"" + String(errlog.status) + "\"";
     playload = playload + "}]";
     
-    //Serial.print("HOST : ");
-    //Serial.println("http://"IOTCMD_SERVER"/api/enres/log/" + espChipID_str);
-
-    http.begin("http://"IOTCMD_SERVER"/api/enres/log/" + espChipID_str);
+    http.begin("http://" + sd.cfgG.log_server + "/log/" + espChipID_str);
     http.addHeader("Content-Type", "application/json");
 
     hwdt.disable();
     uint16_t httpCode = http.POST(playload);
     hwdt.enable();
-
-    //if(httpCode == 200) errlog.status = 0;
-    //http.end();
 
     if (httpCode != 200) {
       Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
@@ -1233,6 +1226,8 @@ void setup()
 
   pinMode(LED_3G, OUTPUT);
   digitalWrite(LED_3G, HIGH);
+
+  pinMode(PWR_CHK, INPUT);
 
   // Init debug port
   Serial.begin(115200, SERIAL_8N1);
@@ -1425,8 +1420,14 @@ void loop()
   if(millis()-serverMillisChk > SERVER_CHK_INT)
   {
     serverMillisChk = millis();
-    if(serverChkTask())
-      logPostTask();
+    if(sd.cfgG.log_use == 1)
+    {
+      if(serverChkTask())
+        logPostTask();
+    }else
+    {
+      Serial.println("No log Server Config");
+    }
   }
   
   // Interval Reset Chk

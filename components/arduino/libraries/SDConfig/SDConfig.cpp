@@ -80,6 +80,8 @@ bool SDConfig::phaseConfig(String config)
   cfgG.batch_path    = root["global"]["batch_path"].as<String>();
   cfgG.path_sensor = root["global"]["path_sensor"].as<String>();
   cfgG.batch_path_sensor = root["global"]["batch_path_sensor"].as<String>();
+  cfgG.log_use = root["global"]["log_use"];
+  cfgG.log_server    = root["global"]["log_server"].as<String>();
 
   for(uint8_t i=0; i<cfgG.numMeter; i++)
   {
