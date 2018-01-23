@@ -42,12 +42,12 @@ bool SPIFlashMeter::writeMeterData(uint32_t index, uint8_t *buff, uint32_t buff_
     }
   }
   //Erase page that write in first time
-  if ((index + (buff_size/_recordSize)) > _maxRecord)
+  if((index%_maxRecord < _maxRecord) && ((index%_maxRecord + (buff_size/_recordSize)) > _maxRecord))
   {
     _debug->println("Write Last and First Address");
     bool res;
-    res = _flash.writeByteArray(addr, buff, (_maxRecord-index)*_recordSize, true);
-    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-index)*_recordSize), buff_size-(_maxRecord-index)*_recordSize, true);
+    res = _flash.writeByteArray(addr, buff, (_maxRecord-(index%_maxRecord))*_recordSize, true);
+    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-(index%_maxRecord))*_recordSize), buff_size-(_maxRecord-(index%_maxRecord))*_recordSize, true);
     return res;
   }
   else
@@ -60,7 +60,15 @@ bool SPIFlashMeter::readMeterData(uint32_t index, uint8_t *buff, uint32_t buff_s
 {
   uint32_t addr = (index%_maxRecord)*_recordSize + _reserveSize; //Cal Address from Chip Size, NumMeter
 
-  return _flash.readByteArray(addr, buff, buff_size);
+  if((index%_maxRecord < _maxRecord) && ((index%_maxRecord + (buff_size/_recordSize)) > _maxRecord))
+  {
+    _debug->println("Read Last and First Address");
+    bool res;
+    res = _flash.readByteArray(addr, buff, (_maxRecord-(index%_maxRecord))*_recordSize);
+    res &= _flash.readByteArray(_reserveSize, buff+((_maxRecord-(index%_maxRecord))*_recordSize), buff_size-(_maxRecord-(index%_maxRecord))*_recordSize);
+    return res;
+  }else
+    return _flash.readByteArray(addr, buff, buff_size);
 }
 
 bool SPIFlashMeter::writeSensorData(uint32_t index, uint8_t *buff, uint32_t buff_size)
@@ -79,12 +87,12 @@ bool SPIFlashMeter::writeSensorData(uint32_t index, uint8_t *buff, uint32_t buff
     }
   }
   //Erase page that write in first time
-  if ((index + (buff_size/_recordSize)) > _maxRecord)
+  if((index%_maxRecord < _maxRecord) && ((index%_maxRecord + (buff_size/_recordSize)) > _maxRecord))
   {
     _debug->println("Write Last and First Address");
     bool res;
-    res = _flash.writeByteArray(addr, buff, (_maxRecord-index)*_recordSize, true);
-    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-index)*_recordSize), buff_size-(_maxRecord-index)*_recordSize, true);
+    res = _flash.writeByteArray(addr, buff, (_maxRecord-(index%_maxRecord))*_recordSize, true);
+    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-(index%_maxRecord))*_recordSize), buff_size-(_maxRecord-(index%_maxRecord))*_recordSize, true);
     return res;
   }
   else
@@ -95,6 +103,14 @@ bool SPIFlashMeter::readSensorData(uint32_t index, uint8_t *buff, uint32_t buff_
 {
   uint32_t addr = (index%_maxRecord)*_recordSize + _reserveSize; //Cal Address from Chip Size, NumMeter
   
+  if((index%_maxRecord < _maxRecord) && ((index%_maxRecord + (buff_size/_recordSize)) > _maxRecord))
+  {
+    _debug->println("Read Last and First Address");
+    bool res;
+    res = _flash.readByteArray(addr, buff, (_maxRecord-(index%_maxRecord))*_recordSize);
+    res &= _flash.readByteArray(_reserveSize, buff+((_maxRecord-(index%_maxRecord))*_recordSize), buff_size-(_maxRecord-(index%_maxRecord))*_recordSize);
+    return res;
+  }else
     return _flash.readByteArray(addr, buff, buff_size);
 }
 
@@ -115,12 +131,12 @@ bool SPIFlashMeter::writeFlowData(uint32_t index, uint8_t *buff, uint32_t buff_s
     }
   }
   //Erase page that write in first time
-  if ((index + (buff_size/_recordSize)) > _maxRecord)
+  if((index%_maxRecord < _maxRecord) && ((index%_maxRecord + (buff_size/_recordSize)) > _maxRecord))
   {
     _debug->println("Write Last and First Address");
     bool res;
-    res = _flash.writeByteArray(addr, buff, (_maxRecord-index)*_recordSize, true);
-    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-index)*_recordSize), buff_size-(_maxRecord-index)*_recordSize, true);
+    res = _flash.writeByteArray(addr, buff, (_maxRecord-(index%_maxRecord))*_recordSize, true);
+    res &= _flash.writeByteArray(_reserveSize, buff+((_maxRecord-(index%_maxRecord))*_recordSize), buff_size-(_maxRecord-(index%_maxRecord))*_recordSize, true);
     return res;
   }
   else
@@ -133,7 +149,15 @@ bool SPIFlashMeter::readFlowData(uint32_t index, uint8_t *buff, uint32_t buff_si
 {
   uint32_t addr = (index%_maxRecord)*_recordSize + _reserveSize; //Cal Address from Chip Size, NumMeter
 
-  return _flash.readByteArray(addr, buff, buff_size);
+  if ((index%_maxRecord < _maxRecord) && ((index%_maxRecord + (buff_size/_recordSize)) > _maxRecord))
+  {
+    _debug->println("Read Last and First Address");
+    bool res;
+    res = _flash.readByteArray(addr, buff, (_maxRecord-(index%_maxRecord))*_recordSize);
+    res &= _flash.readByteArray(_reserveSize, buff+((_maxRecord-(index%_maxRecord))*_recordSize), buff_size-(_maxRecord-(index%_maxRecord))*_recordSize);
+    return res;
+  }else
+    return _flash.readByteArray(addr, buff, buff_size);
 }
 
 uint32_t SPIFlashMeter::getMaxRecord()

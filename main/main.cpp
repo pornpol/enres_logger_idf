@@ -25,7 +25,7 @@
 #define LED_3G            13
 #define HWDT_KD           12
 #define HWDT_EN           14
-#define PWR_CHK           35
+// #define PWR_CHK           35
 //#define FLASH_CS          5
 //#define FLASH_SIZE        128  //Mb
 #define GMT               7
@@ -449,8 +449,8 @@ void flashMeterToBatchPost(uint32_t num)
   Serial.print("PATH: ");
   Serial.println(path);
 
-  //Serial.print("PL: ");
-  //Serial.println(playload);
+  // Serial.print("PL: ");
+  // Serial.println(playload);
 
   HTTPClient http;
 
@@ -1155,7 +1155,7 @@ bool serverChkTask()
 
 bool logPostTask()
 {
-  errlog.e.power = ~(digitalRead(PWR_CHK));
+  // errlog.e.power = ~(digitalRead(PWR_CHK));
 
   Serial.println("Log Posting...");
   hwdt.disable();
@@ -1227,7 +1227,7 @@ void setup()
   pinMode(LED_3G, OUTPUT);
   digitalWrite(LED_3G, HIGH);
 
-  pinMode(PWR_CHK, INPUT);
+  // pinMode(PWR_CHK, INPUT);
 
   // Init debug port
   Serial.begin(115200, SERIAL_8N1);

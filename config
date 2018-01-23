@@ -32,7 +32,9 @@
     "path" : "/v3/data",
     "batch_path" : "/v3/data_batch",
     "path_sensor" : "/v3/data_sensor",
-    "batch_path_sensor" : "/v3/data_sensor_batch"
+    "batch_path_sensor" : "/v3/data_sensor_batch",
+    "log_use" : 1,
+    "log_server" : "www.enres.co/api/enres",
   },
   "meter" : [
     {
