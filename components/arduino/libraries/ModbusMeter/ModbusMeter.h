@@ -92,6 +92,7 @@ class ModbusMeter
 
     static const uint8_t dts353   = 0x01;
     static const uint8_t eastron  = 0x02;          
+    static const uint8_t iem3255  = 0x03;
 
     //Power Meter DTS-353 Protocol Parameter
     //static const uint16_t dts353DataLength      = 0x0006; //Data Length = 38

@@ -304,6 +304,39 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
       md[index].mdt = mdt;
 
       break;
+    
+    case iem3255:
+      result |= masterTransaction(slave, 3000, 6, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[4];
+      md[index].i1 = wordToFloat(getResponseBuffer(2), getResponseBuffer(3))*adj[5];
+      md[index].i2 = wordToFloat(getResponseBuffer(4), getResponseBuffer(5))*adj[6];
+
+      result = masterTransaction(slave, 3020, 6, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].v0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[7];
+      md[index].v1 = wordToFloat(getResponseBuffer(2), getResponseBuffer(3))*adj[8];
+      md[index].v2 = wordToFloat(getResponseBuffer(4), getResponseBuffer(5))*adj[9];
+      
+      result |= masterTransaction(slave, 3060, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].watt = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[0];
+
+      result |= masterTransaction(slave, 3084, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].pf = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[2];
+
+      result |= masterTransaction(slave, 3204, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].wattHour = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[1];
+
+      result |= masterTransaction(slave, 3220, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].varh = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[3];
+
+      md[index].mdt = mdt;
+      
+      break;
   }
 
   return result;
