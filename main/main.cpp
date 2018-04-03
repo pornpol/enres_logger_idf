@@ -734,44 +734,29 @@ void flashSensorToBatchPost(uint32_t num)
     // Serial.println(playload);
   
     uint16_t httpCode;
-    // if(connType == 0)
-    // {
-      HTTPClient http;
-    
-      http.begin("http://" + host + path);
-      http.addHeader("Content-Type", "application/json");
-    
-      hwdt.disable();
-      httpCode = http.POST(playload);
-      hwdt.enable();
-      if (httpCode != 200) {
-        Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
-        errlog.e.server = 1;
+    HTTPClient http;
+  
+    http.begin("http://" + host + path);
+    http.addHeader("Content-Type", "application/json");
+  
+    hwdt.disable();
+    httpCode = http.POST(playload);
+    hwdt.enable();
+    if (httpCode != 200) {
+      Serial.println("ENRES Error code: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 1;
 
-        // NTF
-        WiFi.reconnect();
+      // NTF
+      WiFi.reconnect();
 
-        return;
-      } else
-      {
-        Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
-        errlog.e.server = 0;
-      }
-      http.end();
-      UNDERLINE;
-    // } else if(connType == 1)
-    // {
-    //   hwdt.disable();
-    //   httpCode = enres3g.post("http://" + host + path, playload);
-    //   hwdt.enable();
-    //   if(httpCode != 200)
-    //   {
-    //     Serial.println("POST Fail");
-    //     return;
-    //   }else{
-    //     Serial.println("POST Seccess");
-    //   }
-    // }
+      return;
+    } else
+    {
+      Serial.println("ENRES POST ok: " + String(httpCode) + " ros : " + http.getString());
+      errlog.e.server = 0;
+    }
+    http.end();
+    UNDERLINE;
 
     rIndex += num;
     // Save to RTC
@@ -1373,8 +1358,8 @@ void loop()
       lastUpdateRTC = mktime(&timeinfo);
     }
   }
-  else
-  {
+  //else
+  //{
     now = rtc.now();
 
     timeinfo.tm_year  = now.year()-1900;
@@ -1383,7 +1368,7 @@ void loop()
     timeinfo.tm_hour  = now.hour();
     timeinfo.tm_min   = now.minute();
     timeinfo.tm_sec   = now.second();
-  }
+  //}
 
   esp_task_wdt_feed();
   hwdt.kickDog();

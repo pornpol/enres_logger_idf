@@ -126,7 +126,7 @@
  * Default is 1 hour. Must not be beolw 15 seconds by specification (i.e. 15000)
  */
 #ifndef SNTP_UPDATE_DELAY
-#define SNTP_UPDATE_DELAY           3600000
+#define SNTP_UPDATE_DELAY           900000
 #endif
 
 /** SNTP macro to get system time, used with SNTP_CHECK_RESPONSE >= 2
