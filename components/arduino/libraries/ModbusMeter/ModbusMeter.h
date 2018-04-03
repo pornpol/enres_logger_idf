@@ -45,7 +45,7 @@ class ModbusMeter
     void postTransmission(void (*)());
 
     /*_____READ HOLDING REGISTER_____*/
-    uint8_t readMeterData(uint8_t, uint8_t, uint8_t, uint8_t, time_t, float*);
+    uint8_t readMeterData(uint8_t, uint8_t, uint8_t, uint8_t, time_t, float*, uint16_t*);
 
     /*_____READ DATA FROM BUFFER_____*/
     uint16_t getResponseBuffer(uint8_t);
@@ -93,6 +93,8 @@ class ModbusMeter
     static const uint8_t dts353   = 0x01;
     static const uint8_t eastron  = 0x02;          
     static const uint8_t iem3255  = 0x03;
+    static const uint8_t generic3  = 0x09;
+    static const uint8_t generic1  = 0x0a;
 
     //Power Meter DTS-353 Protocol Parameter
     //static const uint16_t dts353DataLength      = 0x0006; //Data Length = 38

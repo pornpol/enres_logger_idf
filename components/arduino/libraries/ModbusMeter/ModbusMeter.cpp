@@ -242,7 +242,7 @@ uint8_t ModbusMeter::masterTransaction(uint8_t slave, uint16_t startAddress, uin
   return u8MBStatus;
 }
 
-uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIndex, uint8_t mType, time_t mdt, float* adj)
+uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIndex, uint8_t mType, time_t mdt, float* adj, uint16_t* mt)
 {
   uint8_t result = 0x00;
   // Select Meter Type
@@ -336,6 +336,84 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
 
       md[index].mdt = mdt;
       
+      break;
+
+    case generic3: // 3-Phase
+      result |= masterTransaction(slave, mt[0], 2, mt[10]);
+      if(result) return result;      
+      md[index].watt = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[0];
+
+      result |= masterTransaction(slave, mt[1], 2, mt[10]);
+      if(result) return result;
+      md[index].wattHour = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[1];
+
+      result |= masterTransaction(slave, mt[2], 2, mt[10]);
+      if(result) return result;
+      md[index].pf = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[2];
+
+      result |= masterTransaction(slave, mt[3], 2, mt[10]);
+      if(result) return result;
+      md[index].varh = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[3];
+
+      result |= masterTransaction(slave, mt[4], 2, mt[10]);
+      if(result) return result;
+      md[index].i0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[4];
+
+      result |= masterTransaction(slave, mt[5], 2, mt[10]);
+      if(result) return result;
+      md[index].i1 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[5];
+
+      result |= masterTransaction(slave, mt[6], 2, mt[10]);
+      if(result) return result;
+      md[index].i2 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[6];
+
+      result = masterTransaction(slave, mt[7], 2, mt[10]);
+      if(result) return result;
+      md[index].v0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[7];
+
+      result = masterTransaction(slave, mt[8], 2, mt[10]);
+      if(result) return result;      
+      md[index].v1 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[8];
+
+      result = masterTransaction(slave, mt[9], 2, mt[10]);
+      if(result) return result;      
+      md[index].v2 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[9];
+
+      md[index].mdt = mdt;
+
+      break;
+
+    case generic1: // 1-Phase
+      result |= masterTransaction(slave, mt[0], 2, mt[10]);
+      if(result) return result;      
+      md[index].watt = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[0];
+
+      result |= masterTransaction(slave, mt[1], 2, mt[10]);
+      if(result) return result;
+      md[index].wattHour = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[1];
+
+      result |= masterTransaction(slave, mt[2], 2, mt[10]);
+      if(result) return result;
+      md[index].pf = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[2];
+
+      result |= masterTransaction(slave, mt[3], 2, mt[10]);
+      if(result) return result;
+      md[index].varh = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[3];
+
+      result |= masterTransaction(slave, mt[4], 2, mt[10]);
+      if(result) return result;
+      md[index].i0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[4];
+      md[index].i1 = 0;
+      md[index].i2 = 0;
+
+      result = masterTransaction(slave, mt[7], 2, mt[10]);
+      if(result) return result;
+      md[index].v0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[7];
+      md[index].v1 = 0;    
+      md[index].v2 = 0;
+
+      md[index].mdt = mdt;
+
       break;
   }
 

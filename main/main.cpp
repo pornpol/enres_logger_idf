@@ -77,8 +77,6 @@ typedef union
 
 DeviceStatus errlog;
 
-//#define SNTP_UPDATE_DELAY 900000 //change from 60 (3600000) to 15 minute
-
 // Define HardwareSerial(2) for Modbus Communication
 HardwareSerial Serial2(2);
 // HardwareSerial Serial1(1);
@@ -489,7 +487,7 @@ void ReadMeterToFlash_Task()
   /////////////// Energy Meter /////////////////
   for(uint8_t i = 0; i<sd.cfgG.numMeter; i++)
   {
-    if(!meter.readMeterData(i, sd.cfgM[i].id, sd.cfgM[i].index, sd.cfgM[i].type, mktime(&timeinfo), sd.cfgM[i].adjust))
+    if(!meter.readMeterData(i, sd.cfgM[i].id, sd.cfgM[i].index, sd.cfgM[i].type, mktime(&timeinfo), sd.cfgM[i].adjust, sd.cfgM[i].table))
     {
       Serial.printf("Read Meter ID:%d OK\r\n", sd.cfgM[i].id);
       errlog.e.sensor = 0;
@@ -1266,6 +1264,11 @@ void setup()
   if(sd.cfgG.type == 1)
     uart_config_2.parity = UART_PARITY_EVEN;
   else if(sd.cfgG.type == 3)
+    uart_config_2.parity = UART_PARITY_DISABLE;
+
+  if(sd.cfgG.mbc == 1)
+    uart_config_2.parity = UART_PARITY_EVEN;
+  else if(sd.cfgG.mbc == 2)
     uart_config_2.parity = UART_PARITY_DISABLE;
   
   uart_param_config(uart_num_2, &uart_config_2);

@@ -68,6 +68,7 @@ bool SDConfig::phaseConfig(String config)
   cfgG.interval = root["global"]["interval"];
   cfgG.numMeter = root["global"]["meters"];
   cfgG.adcExt = root["global"]["adc_ext"];
+  cfgG.mbc = root["global"]["mbc"];
   for(uint8_t i=0; i<MAXSSID; i++)
   {
     cfgG.wifiSsid[i] = root["global"]["wifi"][i]["ssid"].as<String>();
@@ -92,7 +93,9 @@ bool SDConfig::phaseConfig(String config)
     for(uint8_t j=0; j<10; j++)
     {
       cfgM[i].adjust[j] = root["meter"][i]["adjust"][j];
-    } 
+      cfgM[i].table[j] = root["meter"][i]["table"][j];
+    }
+    cfgM[i].table[10] = root["meter"][i]["table"][10]; // Modbus Function
   }
 
   for(uint8_t i=0; i<2; i++)

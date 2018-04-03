@@ -1,21 +1,22 @@
 {
   "global" : {
-    "type" : 3,
+    "type" : 1,
     "interval" : 60,
-    "meters" : 4,
+    "meters" : 3,
     "adc_ext" : 1,
+    "mbc" : 0,
     "wifi" : [
       {
-        "ssid" : "FITB Room",
-        "pass" : "fuelintheblank"
+        "ssid" : "enres1604",
+        "pass" : "Enres824"
       },
       {
-        "ssid" : "Claro Internet",
-        "pass" : "3CBEFBB2"
+        "ssid" : "",
+        "pass" : ""
       },
       {
-        "ssid" : "TOT-Home92/215_2.4G_plus",
-        "pass" : "0894541262"
+        "ssid" : "",
+        "pass" : ""
       },
       {
         "ssid" : "",
@@ -27,51 +28,47 @@
       }
     ],
     "url" : "data.enres.co",
-    "token" : "ADTmADTneoUVdMuaGnUcLNYdWNEjEh",
-    "batch" : 10,
+    "token" : "8I3LaxaL8Yx5FASA4UpVh5I2swRoEO",
+    "batch" : 30,
     "path" : "/v3/data",
     "batch_path" : "/v3/data_batch",
     "path_sensor" : "/v3/data_sensor",
     "batch_path_sensor" : "/v3/data_sensor_batch",
     "log_use" : 1,
-    "log_server" : "www.enres.co/api/enres",
+    "log_server" : "www.iotcmd.co/api/enres"
   },
   "meter" : [
-    {
-      "id" : "1",
-      "xid": "500",
-      "type" : "1",
-      "index": "0",
-      "adjust" : [1,1,1,1,1,1,1,1,1,1]
-    },
-    {
-      "id" : "2",
-      "xid": "501",
-      "type" : "1",
-      "index": "0",
-      "adjust" : [1,1,1,1,1,1,1,1,1,1]
-    },
-    {
-      "id" : "1",
-      "xid": "502",
-      "type" : "1",
-      "index": "0",
-      "adjust" : [1,1,1,1,1,1,1,1,1,1]
-    },
-    {
-      "id" : "2",
-      "xid": "503",
-      "type" : "1",
-      "index": "0",
-      "adjust" : [1,1,1,1,1,1,1,1,1,1]
-    }
+  {
+    "id" : "1",
+    "xid": "500",
+    "type" : "10",
+    "index": "0",
+    "adjust" : [1,1,1,1,1,1,1,1,1,1],
+    "table" : [12,358,30,376,0,0,0,6,6,6,4]
+  },
+  {
+    "id" : "1",
+    "xid": "501",
+    "type" : "10",
+    "index": "0",
+    "adjust" : [1,1,1,1,1,1,1,1,1,1],
+    "table" : [14,360,32,378,2,2,2,8,8,8,4]
+  },
+  {
+    "id" : "1",
+    "xid": "502",
+    "type" : "10",
+    "index": "0",
+    "adjust" : [1,1,1,1,1,1,1,1,1,1],
+    "table" : [16,362,34,380,4,4,4,10,10,10,4]
+  }
   ],
   "sensor" : {
     "used" : [0, 1],
-    "xid" : [0, 1006],
+    "xid" : [1002, 1006],
     "pin" : [34, 35, 36, 39, 32, 33, 34, 35],
-    "type" : [1, 1, 0, 0, 4, 4, 0, 0],
-    "range" : [[0,0], [0,0], [0,0], [0,0], [0,0], [0,0], [0,0], [0,0]],
+    "type" : [0, 0, 0, 0, 4, 0, 5, 0],
+    "range" : [[0,2000], [0,0], [0,0], [0,0], [0,0], [0,0], [0,50], [0,0]],
     "adjust" : [[1,0], [1,0], [1,0], [1,0], [1,0], [1,0], [1,0], [1,0]]
   },
   "flow" : {

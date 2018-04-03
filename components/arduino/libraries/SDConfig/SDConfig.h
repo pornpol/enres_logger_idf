@@ -27,6 +27,7 @@ class SDConfig
       uint16_t interval;
       uint8_t numMeter;
       uint8_t adcExt;
+      uint8_t mbc;
       String wifiSsid[MAXSSID];
       String wifiPass[MAXSSID];
       String url;
@@ -48,6 +49,7 @@ class SDConfig
       uint8_t type;
       uint8_t index;
       float adjust[10];
+      uint16_t table[11];
     } configMeter;
     configMeter cfgM[21];
 
