@@ -99,8 +99,9 @@ uint32_t rIndex = 0;
 
 struct tm timeinfo;     // Time Variable
 time_t lastTime;        // Last read meter time
-time_t lastUpdateRTC;   // Last Update RTC
+uint32_t lastUpdateRTC = 0;   // Last Update RTC
 DateTime now;
+time_t chkInRTC;
 
 WiFiMulti wifiMulti;
 
@@ -1347,15 +1348,19 @@ void loop()
       rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
       tAdj = true;
       lastTime = 0; // Read Meter after sync rtc
-      lastUpdateRTC = mktime(&timeinfo);
+      lastUpdateRTC = millis();
     }
 
-    // Check Update RTC Every Hour
-    if(mktime(&timeinfo)-lastUpdateRTC >= (60*60))
+    // Check Update RTC Every 5 Minute
+    if(millis()-lastUpdateRTC >= (5*60000))
     {
-      Serial.printf("Adjust Time : %d/%d/%d %d:%d:%d\r\n", timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-      rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
-      lastUpdateRTC = mktime(&timeinfo);
+      if(chkInRTC < mktime(&timeinfo)) // Check Internal RTC is Running 
+      {
+        Serial.printf("Adjust Time : %d/%d/%d %d:%d:%d\r\n", timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+      }
+      lastUpdateRTC = millis();
+      chkInRTC = mktime(&timeinfo);
     }
   }
   //else
@@ -1369,6 +1374,12 @@ void loop()
     timeinfo.tm_min   = now.minute();
     timeinfo.tm_sec   = now.second();
   //}
+
+  if(lastTime > mktime(&timeinfo))
+  {
+    lastTime = mktime(&timeinfo);
+    Serial.printf("Time Error\r\n");
+  }
 
   esp_task_wdt_feed();
   hwdt.kickDog();
