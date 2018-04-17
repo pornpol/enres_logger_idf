@@ -338,6 +338,112 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
       
       break;
 
+    case heyuan3: // 3-Phase
+      result |= masterTransaction(slave, mt[0], 1, mt[10]);
+      if(result) return result;      
+      md[index].watt = (getResponseBuffer(0)/100.00) * adj[0];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[1], 2, mt[10]);
+      if(result) return result;
+      md[index].wattHour = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[1];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[2], 1, mt[10]);
+      if(result) return result;
+      md[index].pf = (getResponseBuffer(0)/1000.00) * adj[2];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[3], 2, mt[10]);
+      if(result) return result;
+      md[index].varh = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[3];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[4], 1, mt[10]);
+      if(result) return result;
+      md[index].i0 = (getResponseBuffer(0)/10000.00) * adj[4];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[5], 1, mt[10]);
+      if(result) return result;
+      md[index].i1 = (getResponseBuffer(0)/10000.00) * adj[5];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[6], 1, mt[10]);
+      if(result) return result;
+      md[index].i2 = (getResponseBuffer(0)/10000.00) * adj[6];
+
+      delay(5);
+
+      result = masterTransaction(slave, mt[7], 1, mt[10]);
+      if(result) return result;
+      md[index].v0 = (getResponseBuffer(0)/100.00) * adj[7];
+
+      delay(5);
+
+      result = masterTransaction(slave, mt[8], 1, mt[10]);
+      if(result) return result;      
+      md[index].v1 = (getResponseBuffer(0)/100.00) * adj[8];
+
+      delay(5);
+
+      result = masterTransaction(slave, mt[9], 1, mt[10]);
+      if(result) return result;      
+      md[index].v2 = (getResponseBuffer(0)/100.00) * adj[9];
+
+      md[index].mdt = mdt;
+
+      break;
+
+    case heyuan1: // 1-Phase
+      result |= masterTransaction(slave, mt[0], 1, mt[10]);
+      if(result) return result;      
+      md[index].watt = (getResponseBuffer(0)/100.00) * adj[0];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[1], 2, mt[10]);
+      if(result) return result;
+      md[index].wattHour = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[1];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[2], 1, mt[10]);
+      if(result) return result;
+      md[index].pf = (getResponseBuffer(0)/1000.00) * adj[2];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[3], 2, mt[10]);
+      if(result) return result;
+      md[index].varh = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[3];
+
+      delay(5);
+
+      result |= masterTransaction(slave, mt[4], 1, mt[10]);
+      if(result) return result;
+      md[index].i0 = (getResponseBuffer(0)/10000.00) * adj[4];
+      md[index].i1 = 0;
+      md[index].i2 = 0;
+
+      delay(5);
+
+      result = masterTransaction(slave, mt[7], 1, mt[10]);
+      if(result) return result;
+      md[index].v0 = (getResponseBuffer(0)/100.00) * adj[7];
+      md[index].v1 = 0;    
+      md[index].v2 = 0;
+
+      md[index].mdt = mdt;
+
+      break;
+
     case generic3: // 3-Phase
       result |= masterTransaction(slave, mt[0], 2, mt[10]);
       if(result) return result;      

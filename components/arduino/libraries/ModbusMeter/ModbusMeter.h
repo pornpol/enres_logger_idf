@@ -93,6 +93,8 @@ class ModbusMeter
     static const uint8_t dts353   = 0x01;
     static const uint8_t eastron  = 0x02;          
     static const uint8_t iem3255  = 0x03;
+    static const uint8_t heyuan3  = 0x04;
+    static const uint8_t heyuan1  = 0x05;
     static const uint8_t generic3  = 0x09;
     static const uint8_t generic1  = 0x0a;
 
