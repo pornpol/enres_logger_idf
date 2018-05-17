@@ -25,9 +25,7 @@
 #define LED_3G            13
 #define HWDT_KD           12
 #define HWDT_EN           14
-// #define PWR_CHK           35
-//#define FLASH_CS          5
-//#define FLASH_SIZE        128  //Mb
+
 #define GMT               7
 
 #define ADC_INT           0
@@ -99,9 +97,10 @@ uint32_t rIndex = 0;
 
 struct tm timeinfo;     // Time Variable
 time_t lastTime;        // Last read meter time
-uint32_t lastUpdateRTC = 0;   // Last Update RTC
+time_t lastUpdateRTC;   // Last Update RTC  
 DateTime now;
-time_t chkInRTC;
+uint64_t lastchkInRTC;
+time_t lastTimeInRTC;
 
 WiFiMulti wifiMulti;
 
@@ -170,6 +169,8 @@ void wifiConnect()
     Serial.println("WiFi connected");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("MAC address: ");
+    Serial.println(WiFi.macAddress());
     UNDERLINE;
   }
 }
@@ -1328,10 +1329,11 @@ void setup()
   esp_task_wdt_feed();
 
   errlog.e.restart = 1;
-  
-  // Test Crash
-  // if(serverChkTask())
-  //    logPostTask();
+
+  // Wait for Time Sync
+  hwdt.disable();
+  delay(10000);
+  hwdt.enable();
 }
 
 void loop()
@@ -1341,6 +1343,19 @@ void loop()
 
   if(getLocalTime(&timeinfo, 0))
   {
+    // Check Internal RTC is Running every minute
+    if(millis()-lastchkInRTC >= 60000)
+    {
+      // Time not update
+      if(mktime(&timeinfo) != lastTimeInRTC)
+      {
+        lastTimeInRTC = mktime(&timeinfo);
+      }
+      else ESP.restart();
+
+      lastchkInRTC = millis();
+    }
+
     // Set to HWRTC check mon and year
     if(tAdj == false)
     {
@@ -1348,23 +1363,19 @@ void loop()
       rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
       tAdj = true;
       lastTime = 0; // Read Meter after sync rtc
-      lastUpdateRTC = millis();
+      lastUpdateRTC = mktime(&timeinfo);
     }
 
-    // Check Update RTC Every 5 Minute
-    if(millis()-lastUpdateRTC >= (5*60000))
+    // Check Update RTC Every 15 Minute
+    if(mktime(&timeinfo)-lastUpdateRTC >= (60*60))
     {
-      if(chkInRTC < mktime(&timeinfo)) // Check Internal RTC is Running 
-      {
-        Serial.printf("Adjust Time : %d/%d/%d %d:%d:%d\r\n", timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-        rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
-      }
-      lastUpdateRTC = millis();
-      chkInRTC = mktime(&timeinfo);
+      Serial.printf("Adjust Time : %d/%d/%d %d:%d:%d\r\n", timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+      rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+      lastUpdateRTC = mktime(&timeinfo);
     }
   }
-  //else
-  //{
+  else
+  {
     now = rtc.now();
 
     timeinfo.tm_year  = now.year()-1900;
@@ -1373,8 +1384,9 @@ void loop()
     timeinfo.tm_hour  = now.hour();
     timeinfo.tm_min   = now.minute();
     timeinfo.tm_sec   = now.second();
-  //}
+  }
 
+  // Fix Fault time at start
   if(lastTime > mktime(&timeinfo))
   {
     lastTime = mktime(&timeinfo);
