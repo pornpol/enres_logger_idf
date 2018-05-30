@@ -306,33 +306,53 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
       break;
     
     case iem3255:
-      result |= masterTransaction(slave, 3000, 6, ku8MBReadHoldingRegisters);
+      result |= masterTransaction(slave, 2999, 6, ku8MBReadHoldingRegisters);
       if(result) return result;
       md[index].i0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[4];
       md[index].i1 = wordToFloat(getResponseBuffer(2), getResponseBuffer(3))*adj[5];
       md[index].i2 = wordToFloat(getResponseBuffer(4), getResponseBuffer(5))*adj[6];
 
-      result = masterTransaction(slave, 3020, 6, ku8MBReadHoldingRegisters);
+      delay(10);
+
+      result = masterTransaction(slave, 3027, 6, ku8MBReadHoldingRegisters);
       if(result) return result;
       md[index].v0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[7];
       md[index].v1 = wordToFloat(getResponseBuffer(2), getResponseBuffer(3))*adj[8];
       md[index].v2 = wordToFloat(getResponseBuffer(4), getResponseBuffer(5))*adj[9];
-      
-      result |= masterTransaction(slave, 3060, 2, ku8MBReadHoldingRegisters);
+
+      delay(10);
+
+      result |= masterTransaction(slave, 3059, 2, ku8MBReadHoldingRegisters);
       if(result) return result;      
       md[index].watt = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[0];
 
-      result |= masterTransaction(slave, 3084, 2, ku8MBReadHoldingRegisters);
+      delay(10);
+      
+      result |= masterTransaction(slave, 3083, 2, ku8MBReadHoldingRegisters);
       if(result) return result;
       md[index].pf = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[2];
+      if(md[index].pf < -1.00) md[index].pf = (-2.0) - md[index].pf;
+      if(md[index].pf > 1.00) md[index].pf = (2.0) - md[index].pf;
 
-      result |= masterTransaction(slave, 3204, 2, ku8MBReadHoldingRegisters);
-      if(result) return result;
-      md[index].wattHour = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[1];
+      delay(10);
 
-      result |= masterTransaction(slave, 3220, 2, ku8MBReadHoldingRegisters);
+      result |= masterTransaction(slave, 3203, 4, ku8MBReadHoldingRegisters);
       if(result) return result;
-      md[index].varh = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[3];
+      md[index].wattHour = ( ((int64_t)getResponseBuffer(0)<<48) 
+                              | ((int64_t)getResponseBuffer(1)<<32) 
+                              | ((int64_t)getResponseBuffer(2)<<16) 
+                              | ((int64_t)getResponseBuffer(3)) ) 
+                              * adj[1];
+      
+      delay(10);
+
+      result |= masterTransaction(slave, 3219, 4, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].varh = ( ((int64_t)getResponseBuffer(0)<<48) 
+                              | ((int64_t)getResponseBuffer(1)<<32) 
+                              | ((int64_t)getResponseBuffer(2)<<16) 
+                              | ((int64_t)getResponseBuffer(3)) ) 
+                              * adj[3];
 
       md[index].mdt = mdt;
       

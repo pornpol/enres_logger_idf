@@ -5,10 +5,12 @@
 #include <SPIFlashMeter.h>
 #include <AnalogSensor.h>
 #include <HardwareWDT.h>
+#include <NTPClient.h>
 // #include <ENRES3G.h>
 
 #include <time.h>
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <WiFiMulti.h>
 #include <HTTPClient.h>
 #include <esp_int_wdt.h>
@@ -16,6 +18,9 @@
 #include <driver/periph_ctrl.h>
 #include <driver/uart.h>
 #include <soc/uart_struct.h>
+
+// Run this command after make clean
+// rm ${IDF_PATH}/tools/kconfig/lxdialog/*.d
 
 #define BUF_SIZE (1024)
 
@@ -48,6 +53,8 @@
 #define SERVER_CHK_INT    ((15)*60000) // millisecond (15 Minute)
 
 #define RST_CHK_INT    ((1)*(24)*(3600000)) // millisecond (1 Day)
+
+#define SW_VERSION        "0.98"
 
 typedef union
 {
@@ -87,6 +94,9 @@ RTC_MCP7940 rtc;
 AnalogSensor sensor;
 HardwareWDT hwdt;
 // ENRES3G enres3g;
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", GMT*3600);
 
 uint8_t wBuff[RECSIZE*MAXMETER];  // Max Buffer = Record Size * Max no. Meter
 uint8_t rBuff[RECSIZE*MAXMETER];
@@ -1219,6 +1229,8 @@ void setup()
 
   Serial.printf("ESP Chip ID : %s\r\n", espChipID_str.c_str());
 
+  Serial.printf("Software Version : %s\r\n", SW_VERSION);
+
   // Init SD
   sd.begin(SD_CS, Serial);
 
@@ -1300,11 +1312,6 @@ void setup()
     getRIndex();
   }
 
-  // Connect to 3G
-  // hwdt.disable();
-  // enres3g.begin(Serial1, Serial, "internet", "True", "true");
-  // hwdt.enable();
-
   // Connect to Wifi
   hwdt.disable();
   wifiConnect();
@@ -1313,11 +1320,17 @@ void setup()
   hwdt.kickDog();
 
   now = rtc.now();
-  configTime((-1)*GMT*3600, 0, "pool.ntp.org");
+  //configTime((-1)*GMT*3600, 0, "pool.ntp.org");
+  timeClient.begin();
+  
+  hwdt.disable();
+  delay(1000);
+  hwdt.enable();
+
   // loop while NTP not sync or rtc not set
   Serial.println("Wait for time sync");
   Serial.printf("Year : %d\r\n", now.year());
-  while(!(getLocalTime(&timeinfo, 1000) || (now.year() >= 2017)))
+  while(!(timeClient.update() || (now.year() >= 2017)))
   {
     esp_task_wdt_feed();
     hwdt.disable();
@@ -1330,10 +1343,6 @@ void setup()
 
   errlog.e.restart = 1;
 
-  // Wait for Time Sync
-  hwdt.disable();
-  delay(10000);
-  hwdt.enable();
 }
 
 void loop()
@@ -1341,41 +1350,34 @@ void loop()
   esp_task_wdt_feed();
   hwdt.kickDog();
 
-  if(getLocalTime(&timeinfo, 0))
+  if(timeClient.update())
   {
-    // Check Internal RTC is Running every minute
-    if(millis()-lastchkInRTC >= 60000)
-    {
-      // Time not update
-      if(mktime(&timeinfo) != lastTimeInRTC)
-      {
-        lastTimeInRTC = mktime(&timeinfo);
-      }
-      else ESP.restart();
-
-      lastchkInRTC = millis();
-    }
+    time_t ntpTime = timeClient.getEpochTime();
+    timeinfo = *(localtime(&ntpTime));
 
     // Set to HWRTC check mon and year
     if(tAdj == false)
     {
+      Serial.println(ntpTime);
       Serial.printf("Adjust Time : %d/%d/%d %d:%d:%d\r\n", timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
       rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+      lastUpdateRTC = millis(); //mktime(&timeinfo);
       tAdj = true;
       lastTime = 0; // Read Meter after sync rtc
-      lastUpdateRTC = mktime(&timeinfo);
     }
 
-    // Check Update RTC Every 15 Minute
-    if(mktime(&timeinfo)-lastUpdateRTC >= (60*60))
+    // Check Update RTC Every 60 Minute
+    if(millis()-lastUpdateRTC >= (15*60000))
     {
+      Serial.println(ntpTime);
       Serial.printf("Adjust Time : %d/%d/%d %d:%d:%d\r\n", timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
       rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
-      lastUpdateRTC = mktime(&timeinfo);
+      lastUpdateRTC =  millis(); //mktime(&timeinfo);
     }
   }
-  else
-  {
+  else Serial.println("Time Update Error");
+  // else
+  // {
     now = rtc.now();
 
     timeinfo.tm_year  = now.year()-1900;
@@ -1384,7 +1386,7 @@ void loop()
     timeinfo.tm_hour  = now.hour();
     timeinfo.tm_min   = now.minute();
     timeinfo.tm_sec   = now.second();
-  }
+  // }
 
   // Fix Fault time at start
   if(lastTime > mktime(&timeinfo))
