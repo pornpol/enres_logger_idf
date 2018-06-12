@@ -3,6 +3,7 @@
     "fstream": "cpp",
     "istream": "cpp",
     "locale": "cpp",
-    "streambuf": "cpp"
+    "streambuf": "cpp",
+    "rope": "cpp"
   }
 }
