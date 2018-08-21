@@ -4,6 +4,8 @@
     "istream": "cpp",
     "locale": "cpp",
     "streambuf": "cpp",
-    "rope": "cpp"
+    "rope": "cpp",
+    "__locale": "cpp",
+    "functional": "cpp"
   }
 }

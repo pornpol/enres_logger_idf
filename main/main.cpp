@@ -49,6 +49,8 @@
 
 #define RST_CHK_INT    ((1)*(24)*(3600000)) // millisecond (1 Day)
 
+#define SW_VERSION        "0.992"
+
 typedef union
 {
   struct
@@ -1219,6 +1221,8 @@ void setup()
 
   Serial.printf("ESP Chip ID : %s\r\n", espChipID_str.c_str());
 
+  Serial.printf("Software Version : %s\r\n", SW_VERSION);
+
   // Init SD
   sd.begin(SD_CS, Serial);
 
@@ -1300,11 +1304,6 @@ void setup()
     getRIndex();
   }
 
-  // Connect to 3G
-  // hwdt.disable();
-  // enres3g.begin(Serial1, Serial, "internet", "True", "true");
-  // hwdt.enable();
-
   // Connect to Wifi
   hwdt.disable();
   wifiConnect();
@@ -1347,8 +1346,10 @@ void loop()
     if(millis()-lastchkInRTC >= 60000)
     {
       // Time not update
-      if(mktime(&timeinfo) != lastTimeInRTC)
+      //if(mktime(&timeinfo) != lastTimeInRTC)
+      if(mktime(&timeinfo) - lastTimeInRTC >= (60-5))
       {
+        Serial.printf("RTC OK %d - %d\r\n", (int)mktime(&timeinfo), (int)lastTimeInRTC);
         lastTimeInRTC = mktime(&timeinfo);
       }
       else ESP.restart();
@@ -1389,8 +1390,11 @@ void loop()
   // Fix Fault time at start
   if(lastTime > mktime(&timeinfo))
   {
-    lastTime = mktime(&timeinfo);
-    Serial.printf("Time Error\r\n");
+    if(lastUpdateRTC != 0)
+    {
+      lastTime = mktime(&timeinfo);
+      Serial.printf("Time Error\r\n");
+    }
   }
 
   esp_task_wdt_feed();

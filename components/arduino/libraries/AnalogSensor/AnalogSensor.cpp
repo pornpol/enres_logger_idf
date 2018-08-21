@@ -78,6 +78,18 @@ float AnalogSensor::calSensor(uint8_t type, uint16_t value, float range[2])
       calValue = ((calVolt-0.66)*range[1])/(3.3-0.66) - range[0];
       break;
 
+    case sensorColdAirT3 : // 6: Cold Water Temp Type3
+      calVolt = getAdcVoltage(value);
+      calRes = ((20*1000*5)/calVolt)-(20*1000);
+      calValue = ((-22.86)*log(calRes))+235.06;
+      break;
+
+    case sensorHotAirT3 : // 7: Hot Water Temp Type3
+      calVolt = getAdcVoltage(value);
+      calRes = ((5.6*1000*5)/calVolt)-(5.6*1000);
+      calValue = ((-25.45)*log(calRes))+259.54;
+      break;
+
     // case sensorPress : // 5: Pressure
     //   calVolt = getAdcVoltage(value);
     //   calValue = (calVolt/0.165)-4; 
