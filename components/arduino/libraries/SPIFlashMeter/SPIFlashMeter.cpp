@@ -170,7 +170,8 @@ bool SPIFlashMeter::writeConfigFlash(String config)
   uint8_t i;
   char buff[_configSize];
 
-  _flash.eraseSector(_configAddress); //Erase Sector
+  _flash.eraseSector(_configAddress); //Erase Sector 0
+  _flash.eraseSector(_configAddress + _sectorSize); //Erase Sector 1
 
   config.toCharArray(buff, config.length());
 

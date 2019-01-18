@@ -331,6 +331,7 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
       result |= masterTransaction(slave, 3083, 2, ku8MBReadHoldingRegisters);
       if(result) return result;
       md[index].pf = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[2];
+      if(isnan(md[index].pf)) md[index].pf = 0;
       if(md[index].pf < -1.00) md[index].pf = (-2.0) - md[index].pf;
       if(md[index].pf > 1.00) md[index].pf = (2.0) - md[index].pf;
 
@@ -361,13 +362,13 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
     case heyuan3: // 3-Phase
       result |= masterTransaction(slave, mt[0], 1, mt[10]);
       if(result) return result;      
-      md[index].watt = (getResponseBuffer(0)/100.00) * adj[0];
+      md[index].watt = (getResponseBuffer(0)/1000.00) * adj[0];
 
       delay(5);
 
       result |= masterTransaction(slave, mt[1], 2, mt[10]);
       if(result) return result;
-      md[index].wattHour = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[1];
+      md[index].wattHour = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/100.00) * adj[1];
 
       delay(5);
 
@@ -379,25 +380,25 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
 
       result |= masterTransaction(slave, mt[3], 2, mt[10]);
       if(result) return result;
-      md[index].varh = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[3];
+      md[index].varh = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/100.00) * adj[3];
 
       delay(5);
 
       result |= masterTransaction(slave, mt[4], 1, mt[10]);
       if(result) return result;
-      md[index].i0 = (getResponseBuffer(0)/10000.00) * adj[4];
+      md[index].i0 = (getResponseBuffer(0)/100.00) * adj[4];
 
       delay(5);
 
       result |= masterTransaction(slave, mt[5], 1, mt[10]);
       if(result) return result;
-      md[index].i1 = (getResponseBuffer(0)/10000.00) * adj[5];
+      md[index].i1 = (getResponseBuffer(0)/100.00) * adj[5];
 
       delay(5);
 
       result |= masterTransaction(slave, mt[6], 1, mt[10]);
       if(result) return result;
-      md[index].i2 = (getResponseBuffer(0)/10000.00) * adj[6];
+      md[index].i2 = (getResponseBuffer(0)/100.00) * adj[6];
 
       delay(5);
 
@@ -424,13 +425,13 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
     case heyuan1: // 1-Phase
       result |= masterTransaction(slave, mt[0], 1, mt[10]);
       if(result) return result;      
-      md[index].watt = (getResponseBuffer(0)/100.00) * adj[0];
+      md[index].watt = (getResponseBuffer(0)/1000.00) * adj[0];
 
       delay(5);
 
       result |= masterTransaction(slave, mt[1], 2, mt[10]);
       if(result) return result;
-      md[index].wattHour = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[1];
+      md[index].wattHour = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/100.00) * adj[1];
 
       delay(5);
 
@@ -442,13 +443,13 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
 
       result |= masterTransaction(slave, mt[3], 2, mt[10]);
       if(result) return result;
-      md[index].varh = (u16Tou32(getResponseBuffer(0), getResponseBuffer(1))/100.00) * adj[3];
+      md[index].varh = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/100.00) * adj[3];
 
       delay(5);
 
       result |= masterTransaction(slave, mt[4], 1, mt[10]);
       if(result) return result;
-      md[index].i0 = (getResponseBuffer(0)/10000.00) * adj[4];
+      md[index].i0 = (getResponseBuffer(0)/100.00) * adj[4];
       md[index].i1 = 0;
       md[index].i2 = 0;
 
@@ -462,6 +463,165 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
 
       md[index].mdt = mdt;
 
+      break;
+
+    case circutor: // 3-Phase
+      result |= masterTransaction(slave, 0x1e, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].watt = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[0];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x3c, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].wattHour = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[1];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x26, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].pf = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/100.00) * adj[2];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x3c, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].varh = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[3];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x02, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i0 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[4];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x0c, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i1 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[5];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x16, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i2 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[6];
+
+      delay(5);
+
+      result = masterTransaction(slave, 0x00, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].v0 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/10.00) * adj[7];
+
+      delay(5);
+
+      result = masterTransaction(slave, 0x0a, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].v1 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/10.00) * adj[8];
+
+      delay(5);
+
+      result = masterTransaction(slave, 0x14, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].v2 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/10.00) * adj[9];
+
+      md[index].mdt = mdt;
+
+      break;
+
+    case abbm2m: // 3-Phase
+      result |= masterTransaction(slave, 0x102e, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].watt = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[0];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x103e, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].wattHour = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/100000.00) * adj[1];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x1016, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].pf = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[2];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x1040, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].varh = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/100000.00) * adj[3];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x1010, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i0 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[4];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x1012, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i1 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[5];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 0x1014, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i2 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1000.00) * adj[6];
+
+      delay(5);
+
+      result = masterTransaction(slave, 0x1002, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].v0 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1.00) * adj[7];
+
+      delay(5);
+
+      result = masterTransaction(slave, 0x1004, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].v1 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1.00) * adj[8];
+
+      delay(5);
+
+      result = masterTransaction(slave, 0x1006, 2, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].v2 = (u16Tou32(getResponseBuffer(1), getResponseBuffer(0))/1.00) * adj[9];
+
+      md[index].mdt = mdt;
+
+      break;
+
+    case integra1630: // 3 Phase Meter
+      result = masterTransaction(slave, 0x0000, 6, ku8MBReadInputRegisters);
+      if(result) return result;
+      md[index].v0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[7];
+      md[index].v1 = wordToFloat(getResponseBuffer(2), getResponseBuffer(3))*adj[8];
+      md[index].v2 = wordToFloat(getResponseBuffer(4), getResponseBuffer(5))*adj[9];
+
+      result |= masterTransaction(slave, 0x0006, 6, ku8MBReadInputRegisters);
+      if(result) return result;
+      md[index].i0 = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[4];
+      md[index].i1 = wordToFloat(getResponseBuffer(2), getResponseBuffer(3))*adj[5];
+      md[index].i2 = wordToFloat(getResponseBuffer(4), getResponseBuffer(5))*adj[6];
+
+      result |= masterTransaction(slave, 0x0034, 2, ku8MBReadInputRegisters);
+      if(result) return result;      
+      md[index].watt = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[0];
+
+      result |= masterTransaction(slave, 0x0048, 2, ku8MBReadInputRegisters);
+      if(result) return result;
+      md[index].wattHour = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[1];
+
+      result |= masterTransaction(slave, 0x004c, 2, ku8MBReadInputRegisters);
+      if(result) return result;
+      md[index].varh = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[3];
+
+      result |= masterTransaction(slave, 0x00fe, 2, ku8MBReadInputRegisters);
+      if(result) return result;
+      md[index].pf = wordToFloat(getResponseBuffer(0), getResponseBuffer(1))*adj[2];
+
+      md[index].mdt = mdt;
+      
       break;
 
     case generic3: // 3-Phase
@@ -540,6 +700,59 @@ uint8_t ModbusMeter::readMeterData(uint8_t index, uint8_t slave, uint8_t slaveIn
 
       md[index].mdt = mdt;
 
+      break;
+
+    case pm800: // 3 Phase Meter
+      result |= masterTransaction(slave, 1099, 3, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].i0 = getResponseBuffer(0)*adj[4];
+      md[index].i1 = getResponseBuffer(1)*adj[5];
+      md[index].i2 = getResponseBuffer(2)*adj[6];
+
+      delay(5);
+
+      result = masterTransaction(slave, 1123, 3, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].v0 = getResponseBuffer(0)*adj[7];
+      md[index].v1 = getResponseBuffer(1)*adj[8];
+      md[index].v2 = getResponseBuffer(2)*adj[9];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 1142, 1, ku8MBReadHoldingRegisters);
+      if(result) return result;      
+      md[index].watt = getResponseBuffer(0)*adj[0];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 1715, 4, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].wattHour = ( ((int64_t)getResponseBuffer(0)) 
+              + ((int64_t)getResponseBuffer(1)*10000) 
+              + ((int64_t)getResponseBuffer(2)*10000*10000) 
+              + ((int64_t)getResponseBuffer(3)*10000*10000*10000) ) 
+              * adj[1];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 1719, 4, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].varh = ( ((int64_t)getResponseBuffer(0)) 
+              + ((int64_t)getResponseBuffer(1)*10000) 
+              + ((int64_t)getResponseBuffer(2)*10000*10000) 
+              + ((int64_t)getResponseBuffer(3)*10000*10000*10000) ) 
+              * adj[3];
+
+      delay(5);
+
+      result |= masterTransaction(slave, 1166, 1, ku8MBReadHoldingRegisters);
+      if(result) return result;
+      md[index].pf = (getResponseBuffer(0)/1000.00)*adj[2];
+
+      delay(5);
+
+      md[index].mdt = mdt;
+      
       break;
   }
 

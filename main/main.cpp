@@ -49,7 +49,7 @@
 
 #define RST_CHK_INT    ((1)*(24)*(3600000)) // millisecond (1 Day)
 
-#define SW_VERSION        "0.991"
+#define SW_VERSION        "0.992"
 
 typedef union
 {

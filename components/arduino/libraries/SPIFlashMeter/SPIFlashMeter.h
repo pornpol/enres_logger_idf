@@ -28,7 +28,7 @@ class SPIFlashMeter
     const uint32_t _pageSize = 256;
     const uint32_t _sectorSize = 4096;
 
-    const uint32_t _configSize = 4096;
+    const uint32_t _configSize = 7168;
     const uint8_t _configAddress = 0;
     const uint32_t _reserveSize = 8192;
 };

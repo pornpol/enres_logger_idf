@@ -95,8 +95,12 @@ class ModbusMeter
     static const uint8_t iem3255  = 0x03;
     static const uint8_t heyuan3  = 0x04;
     static const uint8_t heyuan1  = 0x05;
+    static const uint8_t circutor  = 0x06;
+    static const uint8_t abbm2m  = 0x07;
+    static const uint8_t integra1630  = 0x08;
     static const uint8_t generic3  = 0x09;
     static const uint8_t generic1  = 0x0a;
+    static const uint8_t pm800  = 0x0b;
 
     //Power Meter DTS-353 Protocol Parameter
     //static const uint16_t dts353DataLength      = 0x0006; //Data Length = 38
