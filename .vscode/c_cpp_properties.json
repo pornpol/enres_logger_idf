@@ -3,6 +3,8 @@
         {
             "name": "Mac",
             "includePath": [
+                "/Users/9pol/Library/Arduino15/packages/esp8266/tools/**",
+                "/Users/9pol/Library/Arduino15/packages/esp8266/hardware/esp8266/2.4.0/**",
                 "/Users/9pol/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266",
                 "/Users/9pol/Documents/Arduino/hardware/espressif/esp32/cores/.DS_Store",
                 "/Users/9pol/Documents/Arduino/hardware/espressif/esp32/cores/esp32"
@@ -23,7 +25,8 @@
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cppStandard": "c++17",
+            "forcedInclude": []
         }
     ],
     "version": 4
