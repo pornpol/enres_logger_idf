@@ -2,4 +2,4 @@ build/
 sdkconfig.old
 components/arduino/.DS_Store
 components/.DS_Store
-.DS_Store
+**/.DS_Store
